@@ -346,6 +346,8 @@ def driver(ident_dir, clean_dir, audit_file, whitelist_file, quarantine_dir, all
     
     for root, dirs, files in os.walk(ident_dir):
          for filename in files:
+             if filename.startswith("."):
+                 continue
              try:
                  ds = dicom.read_file(os.path.join(root,filename))
              except IOError:
