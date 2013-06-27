@@ -1,0 +1,14 @@
+# Standard fair
+.DS_Store
+*~
+*.py?
+*.sw?
+*.egg-info
+*.egg
+*.sock
+dist
+sdist
+build
+pip-log.txt
+MANIFEST
+tags
