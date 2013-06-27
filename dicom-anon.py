@@ -50,7 +50,7 @@ db = None
 
 TABLE_EXISTS = "SELECT name FROM sqlite_master WHERE name=?"
 CREATE_REGULAR_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)"
-CREATE_DATE_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, FOREIGN KEY(study) REFERENCES studyinstanceuid(id))"
+CREATE_DATE_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, FOREIGN KEY(study) REFERENCES studyinstanceuid(id))"
 INSERT_OTHER = "INSERT INTO %s (original, cleaned) VALUES (?, ?)"
 INSERT_DATE = "INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)"
 GET_OTHER = "SELECT cleaned FROM %s WHERE original = ?"
@@ -82,12 +82,13 @@ ATTRIBUTES = {
         (0x8,0x1010):1, # Station name
         (0x10,0x10):1, # Patient's name
         (0x10,0x1005):1, # Patient's Birth Name
-        (0x10,0x20):1 # Patient's ID
+        (0x10,0x20):1, # Patient's ID
+        (0x8,0x20): 1, # Study Date
     },
     "replace": {
         (0x8,0x12): "20000101", # Instance Creation Date
         (0x8,0x13): "000000.00", # Instance Creation Time
-        (0x8,0x20): "20000101", # Study Date
+        #(0x8,0x20): "20000101", # Study Date
         (0x8,0x21): "20000101", # Series Date
         (0x8,0x23): "20000101", # Image Date
         (0x8,0x30): "000000.00", # Study Time
@@ -272,7 +273,7 @@ def personal_cb(ds,e):
 def white_list_cb(ds, e, w=None):
     if w.get(e.tag, None):
         if not e.value.lower.strip() in w[e.tag]:
-            ds[e.tag].value = "VALUE NOT IN WHITE LIST"
+            ds[e.tag].value = str("VALUE NOT IN WHITE LIST")
 
 def convert_hex_json(h):
     value = {}
