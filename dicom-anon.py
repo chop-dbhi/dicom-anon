@@ -32,19 +32,20 @@ from functools import partial
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
 SERIES_INSTANCE_UID = (0x20,0xE)
-SERIES_DESCR = (0x8, 0x103E)
-SOP_CLASS_UID - (0x8,0x16)
+SERIES_DESCR = (0x8,0x103E)
+SOP_CLASS_UID = (0x8,0x16)
 SOP_INSTANCE_UID = (0x8,0x18)
 PIXEL_SPACING = (0x28,0x30)
 IMAGER_PIXEL_SPACING = (0x18,0x1164)
 WINDOW_CENTER = (0x28,0x1050)
-WINDOW_WIDTH =  (0x28, 0x1051)
+WINDOW_WIDTH = (0x28, 0x1051)
 CALIBRATION_TYPE =  (0x28,0x402)
 CALIBRATION_DESCR = (0x28,0x404)
 BURNT_IN = (0x28,0x301)
 MODALITY = (0x8,0x60)
 
 audit = None
+db = None
 
 TABLE_EXISTS = "SELECT name FROM sqlite_master WHERE name=?"
 CREATE_REGULAR_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)"
@@ -62,8 +63,8 @@ CLEANED_TIME = "000000.00"
 # Attributes taken from https://github.com/dicom/ruby-dicom
 ATTRIBUTES = {
     "audit": {
-        SERIES_IUID:1,
-        SERIES_IUID:1,
+        SERIES_INSTANCE_UID:1,
+        SERIES_INSTANCE_UID:1,
         SOP_INSTANCE_UID:1,
 
         (0x8,0x50):1, # Accession Number
@@ -198,7 +199,6 @@ def destination(source, dest, root):
 
     s = difflib.SequenceMatcher(a=root, b=source)
     m = s.find_longest_match(0, len(root), 0, len(source))
-
     if not (m.a == m.b == 0):
         raise Exception("Unexpected file paths: source and root share no"
             " common path.")
@@ -207,7 +207,6 @@ def destination(source, dest, root):
 
     destination_dir = os.path.join(dest, sub_path)
     return destination_dir
-
 
 def get_next_pk(tag):
     audit.execute(NEXT_ID % table(tag.name))
@@ -234,7 +233,7 @@ generate_uid.last = None
 
 def audit_cb(ds, e, study_pk=None, white_list=None, org_root=None):
     if ATTRIBUTES["audit"].get(e.tag, None):
-        cleaned = audit_get(ds, e, study_uid_pk=study_pk)
+        cleaned = audit_get(e, study_uid_pk=study_pk)
         if cleaned == None:
             if e.VR == "DT":
                 cleaned = CLEANED_TIME
@@ -283,11 +282,11 @@ def convert_hex_json(h):
 
 def anonymize(ds, white_list, org_root):
     # anonymize study_uid, save off id
-    cleaned_study_uid = audit_get(ds, ds[STUDY_IUID])
+    cleaned_study_uid = audit_get(ds[STUDY_INSTANCE_UID])
     if cleaned_study_uid == None:
         cleaned_study_uid = generate_uid(org_root)
-        audit_save(ds[STUDY_IUID], ds[STUDY_IUID].value, cleaned_study_uid)
-    ds[STUDY_IUID].value = cleaned_study_uid
+        audit_save(ds[STUDY_INSTANCE_UID], ds[STUDY_INSTANCE_UID].value, cleaned_study_uid)
+    ds[STUDY_INSTANCE_UID].value = cleaned_study_uid
     # Get pk of study_uid
     study_pk = audit_get_study_pk(cleaned_study_uid)
 
@@ -299,17 +298,18 @@ def anonymize(ds, white_list, org_root):
     ds.walk(delete_cb)
     ds.walk(vr_cb)
     ds.walk(personal_cb)
+    if white_list:
+        w = open(white_list, 'r')
+        white_list = w.read()
+        white_list = json.loads(white_list)
+        w.close()
 
-    w = open(white_list, 'r')
-    white_list = w.read()
-    white_list = json.loads(white_list)
-    w.close()
-
-    white_list = convert_hex_json(white_list) 
-    ds.walk(partial(white_list_cb, w=white_list))
+        white_list = convert_hex_json(white_list) 
+        ds.walk(partial(white_list_cb, w=white_list))
     return ds
 
 def open_audit(identity):
+    global db, audit
     bootstrap = False
     if not os.path.isfile(identity):
        bootstrap = True
@@ -318,7 +318,7 @@ def open_audit(identity):
     if bootstrap:
         # create the table that holds the studyintance because others will refer to it
         audit.execute(CREATE_REGULAR_TABLE % "studyinstanceuid")
-        audit.commit()
+        db.commit()
 
 def quarantine(ds, allowed_modalities):
     # TODO use a file allowed, not allowed
@@ -347,30 +347,27 @@ def driver(ident_dir, clean_dir, audit_file, whitelist_file, quarantine_dir, all
              except IOError:
                  sys.stderr.write("Error reading file %s\n" % os.path.join(root,
                      filename))
-                 audit.close()
+                 db.close()
                  sys.exit()
 
              if quarantine(ds, allowed_modalites):
-                 full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, root)
+                 full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
                  if not os.path.exists(full_quarantine_dir):
                        os.makedirs(full_quarantine_dir)
                  quarantine_name = os.path.join(full_quarantine_dir, filename)
                  shutil.copyfile(os.path.join(root, filename), quarantine_name)
                  continue
-
-             destination_dir = destination(os.path.join(root, filename), clean_dir, root)
+             destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
-
              ds = anonymize(ds, white_list, org_root)
              clean_name = os.path.join(destination_dir, filename)
-
              ds.save_as(clean_name)
-    audit.close()
+    db.close()
 
 
 def table_exists(table):
-    audit.execute(TABLE_EXISTS, table)
+    audit.execute(TABLE_EXISTS, (table,))
     results = audit.fetchall()
     return len(results) > 0
 
@@ -378,22 +375,23 @@ def table_name(tag):
     return tag.name.replace(' ','').lower()
 
 def audit_get_study_pk(cleaned):
-    audit.execute(STUDY_PK, cleaned)
+    audit.execute(STUDY_PK, (cleaned,))
     results = audit.fetchall()
     return results[0][0]
 
-def audit_get(tag, original, study_uid_pk=None):
+def audit_get(tag, study_uid_pk=None):
     value = None
+    original = tag.value
     if not table_exists(table_name(tag)):
         return value
 
     if tag.VR in ['DA', 'DT']:
-        audit.execute(GET_DATE % table_name(tag), original, study_uid_pk)
+        audit.execute(GET_DATE % table_name(tag), (original, study_uid_pk))
         results  = audit.fetchall()
         if len(results):
             value = results[0][0]
     else:
-        audit.execute(GET_OTHER % table_name(tag), original)
+        audit.execute(GET_OTHER % table_name(tag), (original,))
         results  = audit.fetchall()
         if len(results):
             value = results[0][0]
@@ -406,15 +404,15 @@ def audit_save(tag, original, cleaned, study_uid_pk=None):
             audit.execute(CREATE_DATE_TABLE % table_name(tag))
         else:
             audit.execute(CREATE_REGULAR_TABLE % table_name(tag))
-        audit.commit()
+        db.commit()
 
     # Table exists
     if tag.VR in ['DA', 'DT']:
-        audit.execute(INSERT_DATE % table_name(tag), original, cleaned, study_uid_pk)
+        audit.execute(INSERT_DATE % table_name(tag), (original, cleaned, study_uid_pk))
     else:
-        audit.execute(INSERT_OTHER % table_name(tag), original, cleaned)
+        audit.execute(INSERT_OTHER % table_name(tag), (original, cleaned))
 
-    audit.commit()
+    db.commit()
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -427,7 +425,7 @@ if __name__ == "__main__":
     parser.add_option("-a", "--audit_file", default="identity.db", dest="audit", action="store",
             help="Name of sqlite audit file")
 
-    parser.add_option("-m", "--modalities", default=["mr", "ct"], dest = modalities, action="store",
+    parser.add_option("-m", "--modalities", default="mr,ct", dest = "modalities", action="store",
             help="Comma separated list of allowed modalities. Defaults to mr,ct")
     
     parser.add_option("-r", "--root", default="5.555.5", dest = "root", action="store",
@@ -435,12 +433,12 @@ if __name__ == "__main__":
     
     (options, args) = parser.parse_args()
 
-    ident_dir = args[1]
-    clean_dir = args[2]
-    allowed_modalities = [m.strip().lower() for m in options.modalties.split(",")]
+    ident_dir = args[0]
+    clean_dir = args[1]
+    allowed_modalities = [m.strip().lower() for m in options.modalities.split(",")]
     white_list = options.whitelist
-    quarantine = options.quarantine
+    quarantine_dir = options.quarantine
     audit_file = options.audit
     root = options.root
 
-    driver(ident_dir, clean_dir, audit_file, white_list, quarantine, allowed_modalities, root)
+    driver(ident_dir, clean_dir, audit_file, white_list, quarantine_dir, allowed_modalities, root)

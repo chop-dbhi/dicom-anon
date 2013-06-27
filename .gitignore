@@ -6,9 +6,11 @@
 *.egg-info
 *.egg
 *.sock
+*.dcm
 dist
 sdist
 build
 pip-log.txt
 MANIFEST
 tags
+identity.db
