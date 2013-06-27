@@ -25,6 +25,7 @@ import sys
 import os
 import shutil
 import json
+import re
 from datetime import datetime
 from optparse import OptionParser
 from functools import partial
@@ -209,7 +210,9 @@ def destination(source, dest, root):
     return destination_dir
 
 def get_next_pk(tag):
-    audit.execute(NEXT_ID % table(tag.name))
+    if not table_exists(table_name(tag)):
+        return 1
+    audit.execute(NEXT_ID % table_name(tag))
     results = audit.fetchall()
     if results[0][0]:
         return int(results[0][0]+1)
@@ -217,9 +220,9 @@ def get_next_pk(tag):
         return 1
 
 def keep(e):
-    if ATTRIBUTES["replace"].get(e.tag, None) or ATTRIBUTES["audit"].get(e.tag, None):
-        return True
-    return False
+   if ATTRIBUTES["replace"].get((e.tag.group, e.tag.element), None) or ATTRIBUTES["audit"].get((e.tag.group, e.tag.element), None):
+       return True
+   return False
     
 def generate_uid(org_root):
     n = datetime.now()
@@ -232,7 +235,7 @@ def generate_uid(org_root):
 generate_uid.last = None
 
 def audit_cb(ds, e, study_pk=None, white_list=None, org_root=None):
-    if ATTRIBUTES["audit"].get(e.tag, None):
+    if e.tag in ATTRIBUTES['audit'].keys():
         cleaned = audit_get(e, study_uid_pk=study_pk)
         if cleaned == None:
             if e.VR == "DT":
@@ -244,15 +247,15 @@ def audit_cb(ds, e, study_pk=None, white_list=None, org_root=None):
             else:
                 cleaned = "%s %d" % (e.name, get_next_pk(e))
             audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
-        ds[e.tag].value = cleaned
+        ds[e.tag].value = str(cleaned)
 
 def delete_cb(ds, e):
-    if ATTRIBUTES["delete"].get(e.tag, None):
+    if e.tag in ATTRIBUTES["delete"].keys():
         del ds[e.tag]
 
 def replace_cb(ds, e):
-    if ATTRIBUTES["replace"].get(e.tag, None) != None:
-       ds[e.tag].value = ATTRIBUTES["replace"][e.tag]
+    if e.tag in ATTRIBUTES["replace"].keys():
+       ds[e.tag].value = str(ATTRIBUTES["replace"][(e.tag.group,e.tag.element)])
 
 def vr_cb(ds, e):
     if keep(e):
@@ -372,7 +375,7 @@ def table_exists(table):
     return len(results) > 0
 
 def table_name(tag):
-    return tag.name.replace(' ','').lower()
+    return re.sub('\W+', '', tag.name.lower())
 
 def audit_get_study_pk(cleaned):
     audit.execute(STUDY_PK, (cleaned,))
