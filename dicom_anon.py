@@ -88,7 +88,6 @@ ATTRIBUTES = {
     "replace": {
         (0x8,0x12): "20000101", # Instance Creation Date
         (0x8,0x13): "000000.00", # Instance Creation Time
-        #(0x8,0x20): "20000101", # Study Date
         (0x8,0x21): "20000101", # Series Date
         (0x8,0x23): "20000101", # Image Date
         (0x8,0x30): "000000.00", # Study Time
@@ -96,7 +95,7 @@ ATTRIBUTES = {
         (0x8,0x33): "000000.00", # Image Time
         (0x10,0x30): "20000101",  # Patient's Birth Date
         (0x10,0x40): "", # Patient's Sex
-        (0x10,0x1001): "OtherPatientNames", # Other Patient Names
+        (0x10,0x1001): "", # Other Patient Names
         (0x10,0x1010): "",# Patients Age
         (0x10,0x1020): "",# Patient Size
         (0x10,0x1030): "", # Patient Weight
@@ -220,8 +219,11 @@ def get_next_pk(tag):
     else:
         return 1
 
-def keep(e):
-   if ATTRIBUTES["replace"].get((e.tag.group, e.tag.element), None) or ATTRIBUTES["audit"].get((e.tag.group, e.tag.element), None):
+def keep(e, white_list=None):
+   if ATTRIBUTES["replace"].get((e.tag.group, e.tag.element), None) or \
+      ATTRIBUTES["audit"].get((e.tag.group, e.tag.element), None):
+       return True
+   if white_list and white_list.get((e.tag.group, e.tag.element), None):
        return True
    return False
     
@@ -235,7 +237,7 @@ def generate_uid(org_root):
     return new_guid
 generate_uid.last = None
 
-def audit_cb(ds, e, study_pk=None, white_list=None, org_root=None):
+def audit_cb(ds, e, study_pk=None, org_root=None):
     if e.tag in ATTRIBUTES['audit'].keys():
         cleaned = audit_get(e, study_uid_pk=study_pk)
         if cleaned == None:
@@ -258,14 +260,14 @@ def replace_cb(ds, e):
     if e.tag in ATTRIBUTES["replace"].keys():
        ds[e.tag].value = str(ATTRIBUTES["replace"][(e.tag.group,e.tag.element)])
 
-def vr_cb(ds, e):
-    if keep(e):
+def vr_cb(ds, e, white_list=None):
+    if keep(e, white_list):
         return
     if e.VR in ["PN", "UI", "DA", "DT", "LT", "UN", "UT", "ST"]:
         del ds[e.tag]
 
-def personal_cb(ds,e):
-    if keep(e):
+def personal_cb(ds,e, white_list=None):
+    if keep(e, white_list):
         return
     if e.tag.group == 0x1000:
         del ds[e.tag]
@@ -285,6 +287,13 @@ def convert_hex_json(h):
     return value
 
 def anonymize(ds, white_list, org_root):
+    if white_list:
+        w = open(white_list, 'r')
+        white_list = w.read()
+        white_list = json.loads(white_list)
+        w.close()
+        white_list = convert_hex_json(white_list) 
+
     # anonymize study_uid, save off id
     cleaned_study_uid = audit_get(ds[STUDY_INSTANCE_UID])
     if cleaned_study_uid == None:
@@ -297,18 +306,12 @@ def anonymize(ds, white_list, org_root):
     ds.remove_private_tags()    
 
     # Take care of any attributes to be in the audit_trail
-    ds.walk(partial(audit_cb, study_pk=study_pk, white_list=white_list, org_root=org_root))
+    ds.walk(partial(audit_cb, study_pk=study_pk, org_root=org_root))
     ds.walk(replace_cb)
     ds.walk(delete_cb)
-    ds.walk(vr_cb)
-    ds.walk(personal_cb)
+    ds.walk(partial(vr_cb, white_list=white_list))
+    ds.walk(partial(personal_cb, white_list=white_list))
     if white_list:
-        w = open(white_list, 'r')
-        white_list = w.read()
-        white_list = json.loads(white_list)
-        w.close()
-
-        white_list = convert_hex_json(white_list) 
         ds.walk(partial(white_list_cb, w=white_list))
     return ds
 
