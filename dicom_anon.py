@@ -32,7 +32,7 @@ from optparse import OptionParser
 from functools import partial
 
 logger = logging.getLogger('anon')
-logger.setLevel('info')
+logger.setLevel(logging.INFO)
 
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
@@ -259,7 +259,7 @@ def generate_uid(org_root):
     return new_guid
 generate_uid.last = None
 
-def audit(ds, e, study_pk=None, org_root=None):
+def audit_handler(ds, e, study_pk=None, org_root=None):
     if e.tag in ATTRIBUTES['audit'].keys():
         cleaned = audit_get(e, study_uid_pk=study_pk)
         if cleaned == None:
@@ -276,19 +276,19 @@ def audit(ds, e, study_pk=None, org_root=None):
         return True
     return False
 
-def delete(ds, e):
+def delete_handler(ds, e):
     if e.tag in ATTRIBUTES['delete'].keys():
         del ds[e.tag]
         return True
     return False
 
-def replace(ds, e):
+def replace_handler(ds, e):
     if e.tag in ATTRIBUTES['replace'].keys():
        ds[e.tag].value = str(ATTRIBUTES["replace"][(e.tag.group,e.tag.element)])
        return True
     return False
 
-def vr(ds, e, white_list=None):
+def vr_handler(ds, e, white_list=None):
     if keep(e, white_list):
         return False
     if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST']:
@@ -296,7 +296,7 @@ def vr(ds, e, white_list=None):
         return True
     return False
 
-def personal(ds,e, white_list=None):
+def personal_handler(ds,e, white_list=None):
     if keep(e, white_list):
         return False
     if e.tag.group == 0x1000:
@@ -304,30 +304,30 @@ def personal(ds,e, white_list=None):
         return True
     return False
 
-def w_list(ds, e, white_list=None):
+def white_list_handler(ds, e, white_list=None):
     if white_list.get(e.tag, None):
         if not e.value.lower.strip() in white_listj[e.tag]:
             ds[e.tag].value = str('VALUE WAS NOT IN WHITE LIST')
 
 def clean_cb(ds, e, study_pk, org_root=None, white_list=None):
-    done = audit(ds, e, study_pk=study_pk, org_root=org_root)
+    done = audit_handler(ds, e, study_pk=study_pk, org_root=org_root)
     if done:
         return
-    done = delete(ds, e)
+    done = delete_handler(ds, e)
     if done:
         return
-    done = replace(ds, e)
+    done = replace_handler(ds, e)
     if done:
         return
-    done = vr(ds, e, white_list=white_list)
+    done = vr_handler(ds, e, white_list=white_list)
     if done: 
         return
-    done = personal(ds, e, white_list=white_list)
+    done = personal_handler(ds, e, white_list=white_list)
     if done:
         return
 
     if white_list:
-        w_list(ds, e, white_list=white_list)
+        white_list_handler(ds, e, white_list=white_list)
 
 def convert_json_white_list(h):
     value = {}
@@ -360,7 +360,7 @@ def anonymize(ds, white_list, org_root):
     ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list))
     return ds
 
-def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalites=['mr','ct'], org_root='5.555.5', white_list_file = None):
+def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], org_root='5.555.5', white_list_file = None):
     open_audit(audit_file) 
 
     for root, dirs, files in os.walk(ident_dir):
@@ -388,7 +388,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
-             ds = anonymize(ds, white_list, org_root)
+             ds = anonymize(ds, white_list_file, org_root)
              clean_name = os.path.join(destination_dir, filename)
              try:
                  ds.save_as(clean_name)
@@ -467,8 +467,8 @@ if __name__ == "__main__":
     parser.add_option("-q", "--quarantine", default="quarantine", dest="quarantine", action="store",
             help="Quarantine directory")
 
-    parser.add_option("-w", "--whitelist", default=None, dest="whitelist", action="store",
-            help="Whitelist json file")
+    parser.add_option("-w", "--white_list", default=None, dest="white_list", action="store",
+            help="White list json file")
 
     parser.add_option("-a", "--audit_file", default="identity.db", dest="audit", action="store",
             help="Name of sqlite audit file")
@@ -476,7 +476,7 @@ if __name__ == "__main__":
     parser.add_option("-m", "--modalities", default="mr,ct", dest = "modalities", action="store",
             help="Comma separated list of allowed modalities. Defaults to mr,ct")
 
-    parser.add_option("-r", "--root", default="5.555.5", dest = "root", action="store",
+    parser.add_option("-o", "--org_root", default="5.555.5", dest = "org_root", action="store",
             help="Your organizations DICOM org root")
 
     (options, args) = parser.parse_args()
@@ -484,11 +484,11 @@ if __name__ == "__main__":
     ident_dir = args[0]
     clean_dir = args[1]
     allowed_modalities = [m.strip().lower() for m in options.modalities.split(",")]
-    white_list_file = options.whitelist
+    white_list_file = options.white_list
     quarantine_dir = options.quarantine
     audit_file = options.audit
-    root_org = options.root
+    org_root = options.org_root
 
     driver(ident_dir, clean_dir, quarantine_dir=quarantine_dir, audit_file=audit_file, 
-            allowed_modalities=allowed_modalities, root_org=root_org, 
+            allowed_modalities=allowed_modalities, org_root=org_root, 
             white_list_file=white_list_file)
