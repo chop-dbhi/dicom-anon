@@ -26,9 +26,13 @@ import os
 import shutil
 import json
 import re
+import logging
 from datetime import datetime
 from optparse import OptionParser
 from functools import partial
+
+logger = logging.getLogger('anon')
+logger.setLevel('info')
 
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
@@ -48,22 +52,22 @@ MODALITY = (0x8,0x60)
 audit = None
 db = None
 
-TABLE_EXISTS = "SELECT name FROM sqlite_master WHERE name=?"
-CREATE_REGULAR_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)"
-CREATE_DATE_TABLE = "CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, FOREIGN KEY(study) REFERENCES studyinstanceuid(id))"
-INSERT_OTHER = "INSERT INTO %s (original, cleaned) VALUES (?, ?)"
-INSERT_DATE = "INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)"
-GET_OTHER = "SELECT cleaned FROM %s WHERE original = ?"
-GET_DATE = "SELECT cleaned FROM %s WHERE original = ? AND study = ?"
-STUDY_PK = "SELECT id FROM studyinstanceuid WHERE cleaned = ?"
-NEXT_ID = "SELECT max(id) FROM %s"
+TABLE_EXISTS = 'SELECT name FROM sqlite_master WHERE name=?'
+CREATE_REGULAR_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
+CREATE_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, FOREIGN KEY(study) REFERENCES studyinstanceuid(id))'
+INSERT_OTHER = 'INSERT INTO %s (original, cleaned) VALUES (?, ?)'
+INSERT_LINKED = 'INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)'
+GET_OTHER = 'SELECT cleaned FROM %s WHERE original = ?'
+GET_DATE = 'SELECT cleaned FROM %s WHERE original = ? AND study = ?'
+STUDY_PK = 'SELECT id FROM studyinstanceuid WHERE cleaned = ?'
+NEXT_ID = 'SELECT max(id) FROM %s'
 
-CLEANED_DATE = "20000101"
-CLEANED_TIME = "000000.00"
+CLEANED_DATE = '20000101'
+CLEANED_TIME = '000000.00'
 
 # Attributes taken from https://github.com/dicom/ruby-dicom
 ATTRIBUTES = {
-    "audit": {
+    'audit': {
         SERIES_INSTANCE_UID:1,
         SERIES_INSTANCE_UID:1,
         SOP_INSTANCE_UID:1,
@@ -85,23 +89,23 @@ ATTRIBUTES = {
         (0x10,0x20):1, # Patient's ID
         (0x8,0x20): 1, # Study Date
     },
-    "replace": {
-        (0x8,0x12): "20000101", # Instance Creation Date
-        (0x8,0x13): "000000.00", # Instance Creation Time
-        (0x8,0x21): "20000101", # Series Date
-        (0x8,0x23): "20000101", # Image Date
-        (0x8,0x30): "000000.00", # Study Time
-        (0x8,0x22): "20000101",  # Acquisition Date
-        (0x8,0x33): "000000.00", # Image Time
-        (0x10,0x30): "20000101",  # Patient's Birth Date
-        (0x10,0x40): "", # Patient's Sex
-        (0x10,0x1001): "", # Other Patient Names
-        (0x10,0x1010): "",# Patients Age
-        (0x10,0x1020): "",# Patient Size
-        (0x10,0x1030): "", # Patient Weight
-        (0x20,0x4000): "",# Image Comments
+    'replace': {
+        (0x8,0x12): '20000101', # Instance Creation Date
+        (0x8,0x13): '000000.00', # Instance Creation Time
+        (0x8,0x21): '20000101', # Series Date
+        (0x8,0x23): '20000101', # Image Date
+        (0x8,0x30): '000000.00', # Study Time
+        (0x8,0x22): '20000101',  # Acquisition Date
+        (0x8,0x33): '000000.00', # Image Time
+        (0x10,0x30): '20000101',  # Patient's Birth Date
+        (0x10,0x40): '', # Patient's Sex
+        (0x10,0x1001): '', # Other Patient Names
+        (0x10,0x1010): '',# Patients Age
+        (0x10,0x1020): '',# Patient Size
+        (0x10,0x1030): '', # Patient Weight
+        (0x20,0x4000): '',# Image Comments
     },
-    "delete":{
+    'delete':{
         (0x8,0x1140):1, # Referenced Image Sequence
         (0x8,0x1110):1, # Referenced Study Sequence
         (0x8,0x1120):1, # Referenced Patient Sequence
@@ -183,7 +187,24 @@ ATTRIBUTES = {
     }
 }
 
+# Return true if file should be quarantined
+def quarantine(ds, allowed_modalities):
+    if SERIES_DESCR in ds:
+        series_desc = ds[SERIES_DESCR].value
+        if series_desc.strip().lower() == 'patient protocol':
+            return (True, 'patient protocol')
+    if MODALITY in ds:
+        modality = ds[MODALITY].value
+        if not modality.strip().lower() in allowed_modalities:
+            return (True, 'modality not allowed')
+    if BURNT_IN in ds:
+        burnt_in = ds[BURNT_IN].value
+        if burnt_in.strip().lower() in ['yes', 'y']:
+            return (True, 'burnt-in data')
+    return (False, '')
 
+# Determines destination of cleaned/quarantined file based on 
+# source folder
 def destination(source, dest, root):
     if not dest.endswith(os.path.sep):
         dest += os.path.sep
@@ -192,17 +213,17 @@ def destination(source, dest, root):
         root += os.path.sep
 
     if dest.startswith(root):
-        raise Exception("Destination directory cannot be inside"
-            "or equal to source directory")
+        raise Exception('Destination directory cannot be inside'
+            'or equal to source directory')
 
     if not source.startswith(root):
-        raise Exception("The file to be moved must be in the root directory")
+        raise Exception('The file to be moved must be in the root directory')
 
     s = difflib.SequenceMatcher(a=root, b=source)
     m = s.find_longest_match(0, len(root), 0, len(source))
     if not (m.a == m.b == 0):
-        raise Exception("Unexpected file paths: source and root share no"
-            " common path.")
+        raise Exception('Unexpected file paths: source and root share no'
+            ' common path.')
 
     sub_path = os.path.dirname(source)[m.size:]
 
@@ -220,70 +241,100 @@ def get_next_pk(tag):
         return 1
 
 def keep(e, white_list=None):
-   if ATTRIBUTES["replace"].get((e.tag.group, e.tag.element), None) or \
-      ATTRIBUTES["audit"].get((e.tag.group, e.tag.element), None):
+   if ATTRIBUTES['replace'].get((e.tag.group, e.tag.element), None) or \
+      ATTRIBUTES['audit'].get((e.tag.group, e.tag.element), None):
        return True
+
    if white_list and white_list.get((e.tag.group, e.tag.element), None):
        return True
    return False
-    
+
 def generate_uid(org_root):
     n = datetime.now()
     while True:
-        new_guid = "%s.%s.%s.%s.%s.%s.%s" % (org_root, n.year, n.month, n.day, n.minute, n.second, n.microsecond) 
+        new_guid = '%s.%s.%s.%s.%s.%s.%s' % (org_root, n.year, n.month, n.day, n.minute, n.second, n.microsecond) 
         if new_guid != generate_uid.last:
             generate_uid.last = new_guid
             break
     return new_guid
 generate_uid.last = None
 
-def audit_cb(ds, e, study_pk=None, org_root=None):
+def audit(ds, e, study_pk=None, org_root=None):
     if e.tag in ATTRIBUTES['audit'].keys():
         cleaned = audit_get(e, study_uid_pk=study_pk)
         if cleaned == None:
-            if e.VR == "DT":
+            if e.VR == 'DT':
                 cleaned = CLEANED_TIME
-            elif e.VR == "DA":
+            elif e.VR == 'DA':
                 cleaned = CLEANED_DATE
-            elif e.VR == "UI":
+            elif e.VR == 'UI':
                 cleaned = generate_uid(org_root)
             else:
-                cleaned = "%s %d" % (e.name, get_next_pk(e))
+                cleaned = '%s %d' % (e.name, get_next_pk(e))
             audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
         ds[e.tag].value = str(cleaned)
+        return True
+    return False
 
-def delete_cb(ds, e):
-    if e.tag in ATTRIBUTES["delete"].keys():
+def delete(ds, e):
+    if e.tag in ATTRIBUTES['delete'].keys():
         del ds[e.tag]
+        return True
+    return False
 
-def replace_cb(ds, e):
-    if e.tag in ATTRIBUTES["replace"].keys():
+def replace(ds, e):
+    if e.tag in ATTRIBUTES['replace'].keys():
        ds[e.tag].value = str(ATTRIBUTES["replace"][(e.tag.group,e.tag.element)])
+       return True
+    return False
 
-def vr_cb(ds, e, white_list=None):
+def vr(ds, e, white_list=None):
     if keep(e, white_list):
-        return
-    if e.VR in ["PN", "UI", "DA", "DT", "LT", "UN", "UT", "ST"]:
+        return False
+    if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST']:
         del ds[e.tag]
+        return True
+    return False
 
-def personal_cb(ds,e, white_list=None):
+def personal(ds,e, white_list=None):
     if keep(e, white_list):
-        return
+        return False
     if e.tag.group == 0x1000:
         del ds[e.tag]
+        return True
+    return False
 
-def white_list_cb(ds, e, w=None):
-    if w.get(e.tag, None):
-        if not e.value.lower.strip() in w[e.tag]:
-            ds[e.tag].value = str("VALUE NOT IN WHITE LIST")
+def w_list(ds, e, white_list=None):
+    if white_list.get(e.tag, None):
+        if not e.value.lower.strip() in white_listj[e.tag]:
+            ds[e.tag].value = str('VALUE WAS NOT IN WHITE LIST')
 
-def convert_hex_json(h):
+def clean_cb(ds, e, study_pk, org_root=None, white_list=None):
+    done = audit(ds, e, study_pk=study_pk, org_root=org_root)
+    if done:
+        return
+    done = delete(ds, e)
+    if done:
+        return
+    done = replace(ds, e)
+    if done:
+        return
+    done = vr(ds, e, white_list=white_list)
+    if done: 
+        return
+    done = personal(ds, e, white_list=white_list)
+    if done:
+        return
+
+    if white_list:
+        w_list(ds, e, white_list=white_list)
+
+def convert_json_white_list(h):
     value = {}
     for tag in h.keys():
-        a,b = tag.split(',')
-        t = (int(a,16),int(b,16))
-        #TODO replace consecutive spaces with1
-        value[t]=[x.lower().strip() for x in h[tag]]
+        a, b = tag.split(',')
+        t = (int(a,16), int(b,16))
+        value[t]=[re.sub(' +', ' ', x.lower().strip()) for x in h[tag]]
     return value
 
 def anonymize(ds, white_list, org_root):
@@ -292,7 +343,7 @@ def anonymize(ds, white_list, org_root):
         white_list = w.read()
         white_list = json.loads(white_list)
         w.close()
-        white_list = convert_hex_json(white_list) 
+        white_list = convert_json_white_list(white_list) 
 
     # anonymize study_uid, save off id
     cleaned_study_uid = audit_get(ds[STUDY_INSTANCE_UID])
@@ -303,18 +354,51 @@ def anonymize(ds, white_list, org_root):
     # Get pk of study_uid
     study_pk = audit_get_study_pk(cleaned_study_uid)
 
-    ds.remove_private_tags()    
+    ds.remove_private_tags()
 
-    # Take care of any attributes to be in the audit_trail
-    ds.walk(partial(audit_cb, study_pk=study_pk, org_root=org_root))
-    ds.walk(replace_cb)
-    ds.walk(delete_cb)
-    ds.walk(partial(vr_cb, white_list=white_list))
-    ds.walk(partial(personal_cb, white_list=white_list))
-    if white_list:
-        ds.walk(partial(white_list_cb, w=white_list))
+    # Walk entire file
+    ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list))
     return ds
 
+def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalites=['mr','ct'], org_root='5.555.5', white_list_file = None):
+    open_audit(audit_file) 
+
+    for root, dirs, files in os.walk(ident_dir):
+         for filename in files:
+             if filename.startswith('.'):
+                 continue
+             try:
+                 ds = dicom.read_file(os.path.join(root,filename))
+             except IOError:
+                 logger.error('Error reading file %s\n' % os.path.join(root,
+                     filename))
+                 db.close()
+                 sys.exit()
+
+             move, reason = quarantine(ds, allowed_modalities)
+             if move:
+                 full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
+                 if not os.path.exists(full_quarantine_dir):
+                       os.makedirs(full_quarantine_dir)
+                 quarantine_name = os.path.join(full_quarantine_dir, filename)
+                 logger.info('%s will be moved to quarantine directory due to: %s\n' % (os.path.join(root, filename), reason))
+                 shutil.copyfile(os.path.join(root, filename), quarantine_name)
+                 continue
+
+             destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
+             if not os.path.exists(destination_dir):
+                 os.makedirs(destination_dir)
+             ds = anonymize(ds, white_list, org_root)
+             clean_name = os.path.join(destination_dir, filename)
+             try:
+                 ds.save_as(clean_name)
+             except IOError:
+                 logger.error('Error writing file %s\n' % clean_name)
+                 db.close()
+                 sys.exit()
+    db.close()
+
+# SQLite audit trail functions
 def open_audit(identity):
     global db, audit
     bootstrap = False
@@ -324,56 +408,8 @@ def open_audit(identity):
     audit = db.cursor()
     if bootstrap:
         # create the table that holds the studyintance because others will refer to it
-        audit.execute(CREATE_REGULAR_TABLE % "studyinstanceuid")
+        audit.execute(CREATE_REGULAR_TABLE % 'studyinstanceuid')
         db.commit()
-
-def quarantine(ds, allowed_modalities):
-    # TODO use a file allowed, not allowed
-    if SERIES_DESCR in ds:
-        series_desc = ds[SERIES_DESCR].value
-        if series_desc.strip().lower() == "patient protocol":
-            return True
-    if MODALITY in ds:
-        modality = ds[MODALITY].value
-        if not modality.strip().lower() in allowed_modalities:
-            return True
-    if BURNT_IN in ds:
-        burnt_in = ds[BURNT_IN].value
-        if burnt.strip().lower() in ["yes", "y"]:
-            return True
-    return False
-
-
-def driver(ident_dir, clean_dir, audit_file, whitelist_file, quarantine_dir, allowed_modalites=['mr','ct'], org_root='5.555.5'):
-    open_audit(audit_file) 
-    
-    for root, dirs, files in os.walk(ident_dir):
-         for filename in files:
-             if filename.startswith("."):
-                 continue
-             try:
-                 ds = dicom.read_file(os.path.join(root,filename))
-             except IOError:
-                 sys.stderr.write("Error reading file %s\n" % os.path.join(root,
-                     filename))
-                 db.close()
-                 sys.exit()
-
-             if quarantine(ds, allowed_modalites):
-                 full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
-                 if not os.path.exists(full_quarantine_dir):
-                       os.makedirs(full_quarantine_dir)
-                 quarantine_name = os.path.join(full_quarantine_dir, filename)
-                 shutil.copyfile(os.path.join(root, filename), quarantine_name)
-                 continue
-             destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
-             if not os.path.exists(destination_dir):
-                 os.makedirs(destination_dir)
-             ds = anonymize(ds, white_list, org_root)
-             clean_name = os.path.join(destination_dir, filename)
-             ds.save_as(clean_name)
-    db.close()
-
 
 def table_exists(table):
     audit.execute(TABLE_EXISTS, (table,))
@@ -406,18 +442,21 @@ def audit_get(tag, study_uid_pk=None):
             value = results[0][0]
     return value
 
-
 def audit_save(tag, original, cleaned, study_uid_pk=None):
     if not table_exists(table_name(tag)):
         if tag.VR in ['DA', 'DT']:
-            audit.execute(CREATE_DATE_TABLE % table_name(tag))
+            audit.execute(CREATE_LINKED_TABLE % table_name(tag))
+        elif tag.VR == 'UI' and tag.name.lower() != 'study instance uid':
+            audit.execute(CREATE_LINKED_TABLE % table_name(tag))
         else:
             audit.execute(CREATE_REGULAR_TABLE % table_name(tag))
         db.commit()
 
     # Table exists
     if tag.VR in ['DA', 'DT']:
-        audit.execute(INSERT_DATE % table_name(tag), (original, cleaned, study_uid_pk))
+        audit.execute(INSERT_LINKED % table_name(tag), (original, cleaned, study_uid_pk))
+    elif tag.VR == 'UI' and tag.name.lower() != 'study instance uid':
+        audit.execute(INSERT_LINKED % table_name(tag), (original, cleaned, study_uid_pk))
     else:
         audit.execute(INSERT_OTHER % table_name(tag), (original, cleaned))
 
@@ -427,7 +466,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-q", "--quarantine", default="quarantine", dest="quarantine", action="store",
             help="Quarantine directory")
-    
+
     parser.add_option("-w", "--whitelist", default=None, dest="whitelist", action="store",
             help="Whitelist json file")
 
@@ -436,18 +475,20 @@ if __name__ == "__main__":
 
     parser.add_option("-m", "--modalities", default="mr,ct", dest = "modalities", action="store",
             help="Comma separated list of allowed modalities. Defaults to mr,ct")
-    
+
     parser.add_option("-r", "--root", default="5.555.5", dest = "root", action="store",
             help="Your organizations DICOM org root")
-    
+
     (options, args) = parser.parse_args()
 
     ident_dir = args[0]
     clean_dir = args[1]
     allowed_modalities = [m.strip().lower() for m in options.modalities.split(",")]
-    white_list = options.whitelist
+    white_list_file = options.whitelist
     quarantine_dir = options.quarantine
     audit_file = options.audit
-    root = options.root
+    root_org = options.root
 
-    driver(ident_dir, clean_dir, audit_file, white_list, quarantine_dir, allowed_modalities, root)
+    driver(ident_dir, clean_dir, quarantine_dir=quarantine_dir, audit_file=audit_file, 
+            allowed_modalities=allowed_modalities, root_org=root_org, 
+            white_list_file=white_list_file)
