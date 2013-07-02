@@ -33,11 +33,6 @@ from functools import partial
 
 logger = logging.getLogger('anon')
 logger.setLevel(logging.INFO)
-ch = logging.StreamHandler() 
-ch.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
@@ -368,7 +363,20 @@ def anonymize(ds, white_list, org_root):
     ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list))
     return ds
 
-def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], org_root='5.555.5', white_list_file = None):
+def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], 
+        org_root='5.555.5', white_list_file = None, log_file=None):
+
+    logger.handlers = []
+    if not log_file:
+        h = logging.StreamHandler() 
+    else:
+        h = logging.FileHandler(log_file)
+
+    h.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    h.setFormatter(formatter)
+    logger.addHandler(h)
+
     open_audit(audit_file) 
 
     for root, dirs, files in os.walk(ident_dir):
@@ -381,7 +389,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                  logger.error('Error reading file %s' % os.path.join(root,
                      filename))
                  db.close()
-                 sys.exit()
+                 return False
 
              move, reason = quarantine(ds, allowed_modalities)
              if move:
@@ -403,8 +411,9 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              except IOError:
                  logger.error('Error writing file "%s"' % clean_name)
                  db.close()
-                 sys.exit()
+                 return False
     db.close()
+    return True
 
 # SQLite audit trail functions
 def open_audit(identity):
@@ -487,6 +496,9 @@ if __name__ == "__main__":
     parser.add_option("-o", "--org_root", default="5.555.5", dest = "org_root", action="store",
             help="Your organizations DICOM org root")
 
+    parser.add_option("-l", "--log_file", default=None, dest="log_file", action = "store",
+            help="Name of file to log messages to. Defaults to console")
+
     (options, args) = parser.parse_args()
 
     ident_dir = args[0]
@@ -499,4 +511,4 @@ if __name__ == "__main__":
 
     driver(ident_dir, clean_dir, quarantine_dir=quarantine_dir, audit_file=audit_file, 
             allowed_modalities=allowed_modalities, org_root=org_root, 
-            white_list_file=white_list_file)
+            white_list_file=white_list_file, log_file=options.log_file)
