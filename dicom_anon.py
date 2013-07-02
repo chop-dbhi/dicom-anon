@@ -33,6 +33,11 @@ from functools import partial
 
 logger = logging.getLogger('anon')
 logger.setLevel(logging.INFO)
+ch = logging.StreamHandler() 
+ch.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
