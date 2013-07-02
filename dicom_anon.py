@@ -296,11 +296,13 @@ def replace_handler(ds, e):
 def vr_handler(ds, e, white_list=None):
     if keep(e, white_list):
         return False
-    if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST']:
+    if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO']:
         del ds[e.tag]
         return True
     return False
 
+# Remove group 0x1000 which contains personal
+# information
 def personal_handler(ds,e, white_list=None):
     if keep(e, white_list):
         return False
@@ -310,8 +312,9 @@ def personal_handler(ds,e, white_list=None):
     return False
 
 def white_list_handler(ds, e, white_list=None):
-    if white_list.get(e.tag, None):
-        if not e.value.lower.strip() in white_listj[e.tag]:
+    if white_list.get((e.tag.group, e.tag.element), None):
+        if not e.value.lower().strip() in white_list[(e.tag.group, e.tag.element)]:
+            logger.info('"%s" not in white list for %s' % (e.value, e.name))
             ds[e.tag].value = str('VALUE WAS NOT IN WHITE LIST')
 
 def clean_cb(ds, e, study_pk, org_root=None, white_list=None):
@@ -375,7 +378,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              try:
                  ds = dicom.read_file(os.path.join(root,filename))
              except IOError:
-                 logger.error('Error reading file %s\n' % os.path.join(root,
+                 logger.error('Error reading file %s' % os.path.join(root,
                      filename))
                  db.close()
                  sys.exit()
@@ -386,7 +389,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                  if not os.path.exists(full_quarantine_dir):
                        os.makedirs(full_quarantine_dir)
                  quarantine_name = os.path.join(full_quarantine_dir, filename)
-                 logger.info('%s will be moved to quarantine directory due to: %s\n' % (os.path.join(root, filename), reason))
+                 logger.info('"%s" will be moved to quarantine directory due to: %s' % (os.path.join(root, filename), reason))
                  shutil.copyfile(os.path.join(root, filename), quarantine_name)
                  continue
 
@@ -398,7 +401,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              try:
                  ds.save_as(clean_name)
              except IOError:
-                 logger.error('Error writing file %s\n' % clean_name)
+                 logger.error('Error writing file "%s"' % clean_name)
                  db.close()
                  sys.exit()
     db.close()
