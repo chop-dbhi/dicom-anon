@@ -34,6 +34,7 @@ from functools import partial
 logger = logging.getLogger('anon')
 logger.setLevel(logging.INFO)
 
+MEDIA_STORAGE_SOP_INSTANCE_UID = (0x2, 0x3)
 STUDY_INSTANCE_UID = (0x20,0xD)
 STUDY_DESCR = (0x8, 0x1030)
 SERIES_INSTANCE_UID = (0x20,0xE)
@@ -65,6 +66,15 @@ NEXT_ID = 'SELECT max(id) FROM %s'
 CLEANED_DATE = '20000101'
 CLEANED_TIME = '000000.00'
 
+ALLOWED_FILE_META = {
+  (0x2, 0x0):1, # File Meta Information Group Length
+  (0x2, 0x1):1, # Version
+  (0x2, 0x2):1, # Media Storage SOP Class UID
+  (0x2, 0x3):1, # Media Storage SOP Instance UID
+  (0x2, 0x10):1,# Transfer Syntax UID
+  (0x2, 0x12):1,# Implementation Class UID
+  (0x2, 0x13):1 # Implementation Version Name
+}
 # Attributes taken from https://github.com/dicom/ruby-dicom
 ATTRIBUTES = {
     'audit': {
@@ -346,6 +356,12 @@ def convert_json_white_list(h):
         value[t]=[re.sub(' +', ' ', x.lower().strip()) for x in h[tag]]
     return value
 
+def clean_meta(ds, e):
+    if ALLOWED_FILE_META.get((e.tag.group, e.tag.element), None):
+        return
+    else:
+        del ds[e.tag]
+
 def anonymize(ds, white_list, org_root):
     if white_list:
         w = open(white_list, 'r')
@@ -367,10 +383,15 @@ def anonymize(ds, white_list, org_root):
 
     # Walk entire file
     ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list))
+
+    # Fix file meta data portion
+    if MEDIA_STORAGE_SOP_INSTANCE_UID in ds.file_meta:
+        ds.file_meta[MEDIA_STORAGE_SOP_INSTANCE_UID].value = ds[SOP_INSTANCE_UID].value
+    ds.file_meta.walk(clean_meta)
     return ds
 
 def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], 
-        org_root='5.555.5', white_list_file = None, log_file=None):
+        org_root='5.555.5', white_list_file = None, log_file=None, rename=False):
 
     logger.handlers = []
     if not log_file:
@@ -411,7 +432,10 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
              ds = anonymize(ds, white_list_file, org_root)
-             clean_name = os.path.join(destination_dir, filename)
+             if rename:
+                 clean_name = os.path.join(destination_dir, ds[SOP_INSTANCE_UID].value)
+             else:
+                 clean_name = os.path.join(destination_dir, filename)
              try:
                  ds.save_as(clean_name)
              except IOError:
@@ -505,6 +529,9 @@ if __name__ == "__main__":
     parser.add_option("-l", "--log_file", default=None, dest="log_file", action = "store",
             help="Name of file to log messages to. Defaults to console")
 
+    parser.add_option('-r', "--rename", default=False, dest="rename", action = "store_true",
+            help="Rename anonymized files to the new SOP Instance UID")
+
     (options, args) = parser.parse_args()
 
     ident_dir = args[0]
@@ -517,4 +544,4 @@ if __name__ == "__main__":
 
     driver(ident_dir, clean_dir, quarantine_dir=quarantine_dir, audit_file=audit_file, 
             allowed_modalities=allowed_modalities, org_root=org_root, 
-            white_list_file=white_list_file, log_file=options.log_file)
+            white_list_file=white_list_file, log_file=options.log_file, rename=options.rename)
