@@ -68,7 +68,7 @@ CLEANED_TIME = '000000.00'
 # Attributes taken from https://github.com/dicom/ruby-dicom
 ATTRIBUTES = {
     'audit': {
-        SERIES_INSTANCE_UID:1,
+        STUDY_INSTANCE_UID:1,
         SERIES_INSTANCE_UID:1,
         SOP_INSTANCE_UID:1,
 
@@ -241,6 +241,12 @@ def get_next_pk(tag):
         return 1
 
 def keep(e, white_list=None):
+   keep_list = [SOP_CLASS_UID]
+
+   for attr in keep_list:
+       if e.tag == attr:
+           return True
+
    if ATTRIBUTES['replace'].get((e.tag.group, e.tag.element), None) or \
       ATTRIBUTES['audit'].get((e.tag.group, e.tag.element), None):
        return True
