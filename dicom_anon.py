@@ -291,7 +291,7 @@ def replace_handler(ds, e):
 def vr_handler(ds, e, white_list=None):
     if keep(e, white_list):
         return False
-    if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO']:
+    if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM']:
         del ds[e.tag]
         return True
     return False
