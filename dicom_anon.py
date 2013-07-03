@@ -375,7 +375,8 @@ def anonymize(ds, white_list, org_root):
     if cleaned_study_uid == None:
         cleaned_study_uid = generate_uid(org_root)
         audit_save(ds[STUDY_INSTANCE_UID], ds[STUDY_INSTANCE_UID].value, cleaned_study_uid)
-    ds[STUDY_INSTANCE_UID].value = cleaned_study_uid
+    
+    #ds[STUDY_INSTANCE_UID].value = cleaned_study_uid
     # Get pk of study_uid
     study_pk = audit_get_study_pk(cleaned_study_uid)
 
