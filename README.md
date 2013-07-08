@@ -50,18 +50,19 @@ There are a number of options that can be explored using the --help tag.
         ]
     }
      ```
+    DICOM attribute 0x8,0x1030 (Study Description) is allowed to be "CT CHEST W/CONTRAST" or "NECK STUDY". All other values will be removed. Case does not matter. Beginning and ending spaces will be stripped and consecutive spaces collapsed.
+
 1. Quarantine - Files that are explicitly marked as containing burnt-in data, and files with a series description of "Patient Protocol" will be copied to a quarantine directory (they are not deleted from the source directory). This directory can be changed on the command line, but defaults to `quaratine` in the current working directory. Files that do not match the allowed modalities (see next item) will also be copied to quarantine. Suggestions for further heuristics are welcome.
 1. Restrict modality. By default only MR and CT will be allowed. This can be changed using the command line.
 
-DICOM attribute 0x8,0x1030 (Study Description) is allowed to be "CT CHEST W/CONTRAST" or "NECK STUDY". All other values will be removed. Case does not matter. Beginning and ending spaces will be stripped and consecutive spaces collapsed.
 
 # Example
 Assume the identified DICOM files are in a directory called `identified` in your home directory, and you want the de-identified placed in a directory called `cleaned` in your home directory.
 
-The following command will put the audit trail in a file called identity.db in the current working directory. It will use a filed called white_list.json in the current working directory for the white_list. It will rename the anonymized files in the target directory according to their new SOP Instance UID. It will use a DICOM org root of 1.2.3.4.5. MR,CT and CR modalities will be allowed. Files that need to be quarantined will be moved to a directory called `quarantined_files\' in the current working directory.
+The following command will put the audit trail in a file called identities.db in the current working directory. It will use a filed called white_list.json in the current working directory for the white_list. It will rename the anonymized files in the target directory according to their new SOP Instance UID. It will use a DICOM org root of 1.2.3.4.5. MR,CT and CR modalities will be allowed. Files that need to be quarantined will be moved to a directory called `quarantined_files' in the current working directory.
 
 ```
-python dicom_anon.py -o 1.2.3.4.5. -r -m mr,ct,cr -a blah.db -q quarantined_files -w white_list.json ~/identified ~/cleaned 
+python dicom_anon.py -o 1.2.3.4.5 -r -m mr,ct,cr -a identities.db -q quarantined_files -w white_list.json ~/identified ~/cleaned 
 ```
 
 
