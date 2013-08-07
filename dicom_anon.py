@@ -77,12 +77,13 @@ ALLOWED_FILE_META = {
 }
 # Attributes taken from https://github.com/dicom/ruby-dicom
 ATTRIBUTES = {
-    'audit': {
+    'audit': {  #             Audit is the equivalent of the Z option in Supp 142
         STUDY_INSTANCE_UID:1,
         SERIES_INSTANCE_UID:1,
         SOP_INSTANCE_UID:1,
 
-        (0x8,0x50):1, # Accession Number
+        (0x8,0x20): 1, # Study Date
+        (0x8,0x50):1, # Accession Number - Z BALC
         (0x8,0x80):1, # Institution name
         (0x8,0x81):1, # Institution Address
         (0x8,0x90):1, # Referring Physician's name
@@ -97,7 +98,6 @@ ATTRIBUTES = {
         (0x10,0x10):1, # Patient's name
         (0x10,0x1005):1, # Patient's Birth Name
         (0x10,0x20):1, # Patient's ID
-        (0x8,0x20): 1, # Study Date
     },
     'replace': {
         (0x8,0x12): '20000101', # Instance Creation Date
@@ -105,7 +105,6 @@ ATTRIBUTES = {
         (0x8,0x21): '20000101', # Series Date
         (0x8,0x23): '20000101', # Image Date
         (0x8,0x30): '000000.00', # Study Time
-        (0x8,0x22): '20000101',  # Acquisition Date
         (0x8,0x33): '000000.00', # Image Time
         (0x10,0x30): '20000101',  # Patient's Birth Date
         (0x10,0x40): '', # Patient's Sex
@@ -116,6 +115,10 @@ ATTRIBUTES = {
         (0x20,0x4000): '',# Image Comments
     },
     'delete':{
+        (0x0,0x1000): 1,# Affected SOP Instance UID - BALC X
+        (0x8,0x22): 1,  # Acquisition Date - BALC X/Z
+        (0x8,0x2A): 1,  # Acquisition DateTime - BALC X/D
+        (0x32,0x30): 1, # Acquisition Time - BALC X/Z
         (0x8,0x1140):1, # Referenced Image Sequence
         (0x8,0x1110):1, # Referenced Study Sequence
         (0x8,0x1120):1, # Referenced Patient Sequence
@@ -128,10 +131,10 @@ ATTRIBUTES = {
         (0x10,0x1040):1, # Patient's Address    
         (0x10,0x1060):1, # Patient's Mother's Birth Name
         (0x10,0x1080):1, # Military Rank
-        (0x10,0x1081):1, # Branch of Service
+        (0x10,0x1081):1, # Branch of Service - BALC X
         (0x10,0x1090):1, # Medical Record Location
         (0x10,0x2000):1, # Medical alerts
-        (0x10,0x2110):1, # Allergies
+        (0x10,0x2110):1, # Allergies - BALC X
         (0x10,0x2150):1, # Country of Residence
         (0x10,0x2152):1, # Region of Residence
         (0x10,0x2154):1, # Patient Phone
@@ -140,36 +143,50 @@ ATTRIBUTES = {
         (0x10,0x2297):1, # Responsible Persons Name
         (0x10,0x2299):1, # Responsible Organization
         (0x10,0x21A0):1, # Smoking Status
-        (0x10,0x21B0):1, # Additional Patient History
+        (0x10,0x21B0):1, # Additional Patient History - BALC X
         (0x10,0x21C0):1, # Pregnancy Status
-        (0x10,0x21D0):1, # Last Menstrual Date
+        (0x10,0x21D0):1, # Last Menstrualjkate
         (0x10,0x21F0):1, # Religious Pref
+        (0x18,0x1007):1, # Cassette ID - BALC X
         (0x18,0x1200):1, # Date of Last Calibration
-        (0x18,0x1201):1, # Time of Last Calibration 
+        (0x18,0x1201):1, # Time of Last Calibration
+        (0x18,0x1400):1, # Acquisition Device Processing Description - BALC X/D
+        (0x18,0x9424):1, # Acquisition Protocol Description - BALC X
+        (0x18,0x4000):1, # Acquisition Comments - BALC X
         (0x20,0x52):1, # Frame of reference UID
+        (0x20,0x9161):1, # Concatenation UID - BALC X
         (0x32,0x12):1, # Study ID Issuer RET
         (0x32,0x1032):1, # Requesting Physician
         (0x32,0x1064):1, # Requested Procedure Sequence
+        (0x38,0x10):1, # Admission ID - BALC X
+        (0x38,0x20):1, # Admission Date - BALC X
+        (0x38,0x21):1, # Admission Time - BALC X
         (0x40,0x275):1, # Requested Attributes Sequence
+        (0x40,0x555):1, # Acquisition Context Sequence- X BALC
         (0x40,0x1001):1, # Requested Procedure ID
         (0x40,0x1010):1, # Names of intended recipient of results
         (0x40,0x1011):1, # ID sequence recipient of results
         (0x40,0x6):1, # Scheduled Performing Physician's Name
+        (0x40,0x280):1, # Comments on Performed Procedure Step - BALC X
         (0x40,0x1012):1, # Reason for peformed procedure sequence
         (0x40,0x1101):1, # Person Identification Sequence
         (0x40,0x1102):1, # Person's address
         (0x40,0x1104):1, # Person's telephone numbers
         (0x40,0x1400):1, # Requested Procedure Comments
-        (0x40,0x2001):1, # Reason for imagin gservie request RET
+        (0x40,0x2001):1, # Reason for imaging servie request RET
         (0x40,0x2008):1, # Order entered by
+        (0x40,0x3001):1, # Confidentiality Constraint on Patient Data Description - BALC X
+        (0x40,0x4035):1, # Actual human performers sequence - BALC X
         (0x40,0x4037):1, # Human performers name
         (0x40,0xA075):1, # Verifying observers name
+        (0x40,0xA078):1, # Author Observer Sequence - BALC X
         (0x40,0xA123):1, # Person Name
         (0x40,0xA124):1, # UID
         (0x70,0x83):1, # Content Creators Name
         (0x72,0x6A):1, # Selector PN Value
         (0x3006,0xA6):1, # ROI Interpreter
         (0x300E,0x08):1, # Reviewer Name
+        (0x4000,0x10):1, # Arbitrary - BALC X
         (0x4008,0x102):1, # Interpretation Recorder
         (0x4008,0x10A):1, # Interpretation Transcriber
         (0x4008,0x10B):1, # Interpretation Text
@@ -180,7 +197,7 @@ ATTRIBUTES = {
         # Supplement 55: Attribute Level Confidentiality (including De-identification)
         (0x8,0x14):1, # Instance Creator UID
         (0x8,0x1040):1, # Institutional Name
-        (0x8,0x1080):1, # Admitting Diagnoses Description
+        (0x8,0x1080):1, # Admitting Diagnoses Description - BALC X
         (0x8,0x2111):1, # Derivation Description 
         (0x10,0x32):1, # Patient's Birth Time
         (0x10,0x1000):1, # Other Patient ID's
