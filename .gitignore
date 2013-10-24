@@ -14,3 +14,5 @@ pip-log.txt
 MANIFEST
 tags
 identity.db
+*.db
+*.json

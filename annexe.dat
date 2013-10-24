@@ -1,0 +1,490 @@
+Accession Number	(0008,0050)
+N	Y	Z									
+Acquisition Comments	(0018,4000)
+Y	N	X							C		
+Acquisition Context Sequence	(0040,0555)
+N	Y	X								C	
+Acquisition Date	(0008,0022)
+N	Y	X/Z					K	C			
+Acquisition DateTime	(0008,002A)
+N	Y	X/D					K	C			
+Acquisition Device Processing Description	(0018,1400)
+N	Y	X/D							C		
+Acquisition Protocol Description	(0018,9424)
+N	Y	X							C		
+Acquisition Time	(0008,0032)
+N	Y	X/Z					K	C			
+Actual Human Performers Sequence	(0040,4035)
+N	N	X									
+Additional Patient’s History	(0010,21B0)
+N	Y	X							C		
+Admission ID	(0038,0010)
+N	Y	X									
+Admitting Date	(0038,0020)
+N	N	X					K	C			
+Admitting Diagnoses Code Sequence	(0008,1084)
+N	Y	X							C		
+Admitting Diagnoses Description	(0008,1080)
+N	Y	X							C		
+Admitting Time	(0038,0021)
+N	N	X					K	C			
+Affected SOP Instance UID	(0000,1000)
+N	N	X		K							
+Allergies	(0010,2110)
+N	N	X				C			C		
+Arbitrary	(4000,0010)
+Y	N	X									
+Author Observer Sequence	(0040,A078)
+N	Y	X									
+Branch of Service	(0010,1081)
+N	N	X									
+Cassette ID	(0018,1007)
+N	Y	X			K						
+Comments on Performed Procedure Step	(0040,0280)
+N	Y	X							C		
+Concatenation UID	(0020,9161)
+N	Y	U		K							
+Confidentiality Constraint on Patient Data Description	(0040,3001)
+N	N	X									
+Content Creator’s Name	(0070,0084)
+N	Y	Z									
+Content Creator’s Identification Code Sequence	(0070,0086)
+N	Y	X									
+Content Date	(0008,0023)
+N	Y	Z/D					K	C			
+Content Sequence	(0040,A730)
+N	Y	X								C	
+Content Time	(0008,0033)
+N	Y	Z/D					K	C			
+Context Group Extension Creator UID	(0008,010D)
+N	Y	U		K							
+Contrast Bolus Agent	(0018,0010)
+N	Y	Z/D							C		
+Contribution Description	(0018,A003)
+N	Y	X							C		
+Country of Residence	(0010,2150)
+N	N	X									
+Creator Version UID	(0008,9123)
+N	Y	U		K							
+Current Patient Location	(0038,0300)
+N	N	X									
+Curve Data	(50xx,xxxx)
+Y	N	X									C
+Curve Date	(0008,0025)
+Y	Y	X					K	C			
+Curve Time	(0008,0035)
+Y	Y	X					K	C			
+Custodial Organization Sequence	(0040,A07C)
+N	Y	X									
+Data Set Trailing Padding	(FFFC,FFFC)
+N	Y	X									
+Derivation Description	(0008,2111)
+N	Y	X							C		
+Detector ID	(0018,700A)
+N	Y	X			K						
+Device Serial Number	(0018,1000)
+N	Y	X/Z/D			K						
+Device UID	(0018,1002)
+N	Y	U		K	K						
+Digital Signature UID	(0400,0100)
+N	Y	X									
+Digital Signatures Sequence	(FFFA,FFFA)
+N	Y	X									
+Dimension Organization UID	(0020,9164)
+N	Y	U		K							
+Discharge Diagnosis Description	(0038,0040)
+Y	N	X							C		
+Distribution Address	(4008,011A)
+Y	N	X									
+Distribution Name	(4008,0119)
+Y	N	X									
+Dose Reference UID	(300A,0013)
+N	Y	U		K							
+Ethnic Group	(0010,2160)
+N	Y	X				K					
+Failed SOP Instance UID List	(0008,0058)
+N	N	U		K							
+Fiducial UID	(0070,031A)
+N	Y	U		K							
+Filler Order Number of Imaging Service Request	(0040,2017)
+N	Y	Z									
+Frame Comments	(0020,9158)
+N	Y	X							C		
+Frame of Reference UID	(0020,0052)
+N	Y	U		K							
+Gantry ID	(0018,1008)
+N	Y	X			K						
+Generator ID	(0018,1005)
+N	Y	X			K						
+Graphic Annotation Sequence	(0070,0001)
+N	Y	D									C
+Human Performers Name	(0040,4037)
+N	N	X									
+Human Performers Organization	(0040,4036)
+N	N	X									
+Icon Image Sequence	(0088,0200)
+N	Y	X									
+Identifying Comments	(0008,4000)
+Y	N	X							C		
+Image Comments	(0020,4000)
+N	Y	X							C		
+Image Presentation Comments	(0028,4000)
+Y	N	X									
+Imaging Service Request Comments	(0040,2400)
+N	N	X							C		
+Impressions	(4008,0300)
+Y	N	X							C		
+Instance Creator UID	(0008,0014)
+N	Y	U		K							
+Institution Address	(0008,0081)
+N	Y	X									
+Institution Code Sequence	(0008,0082)
+N	Y	X/Z/D									
+Institution Name	(0008,0080)
+N	Y	X/Z/D									
+Institutional Department Name	(0008,1040)
+N	Y	X									
+Insurance Plan Identification	(0010,1050)
+Y	N	X									
+Intended Recipients of Results Identification Sequence	(0040,1011)
+N	N	X									
+Interpretation Approver Sequence	(4008,0111)
+Y	N	X									
+Interpretation Author	(4008,010C)
+Y	N	X									
+Interpretation Diagnosis Description	(4008,0115)
+Y	N	X							C		
+Interpretation ID Issuer	(4008,0202)
+Y	N	X									
+Interpretation Recorder	(4008,0102)
+Y	N	X									
+Interpretation Text	(4008,010B)
+Y	N	X							C		
+Interpretation Transcriber	(4008,010A)
+Y	N	X									
+Irradiation Event UID	(0008,3010)
+N	Y	U		K							
+Issuer of Admission ID	(0038,0011)
+N	Y	X									
+Issuer of Patient ID	(0010,0021)
+N	Y	X									
+Issuer of Service Episode ID	(0038,0061)
+N	Y	X									
+Large Palette Color Lookup Table UID	(0028,1214)
+Y	N	U		K							
+Last Menstrual Date	(0010,21D0)
+N	N	X					K	C			
+MAC	(0400,0404)
+N	Y	X									
+Media Storage SOP Instance UID	(0002,0003)
+N	N	U		K							
+Medical Alerts	(0010,2000)
+N	N	X							C		
+Medical Record Locator	(0010,1090)
+N	N	X									
+Military Rank	(0010,1080)
+N	N	X									
+Modified Attributes Sequence	(0400,0550)
+N	N	X									
+Modified Image Description	(0020,3406)
+Y	N	X									
+Modifying Device ID	(0020,3401)
+Y	N	X									
+Modifying Device Manufacturer	(0020,3404)
+Y	N	X									
+Name of Physician(s) Reading Study	(0008,1060)
+N	Y	X									
+Names of Intended Recipient of Results	(0040,1010)
+N	N	X									
+Occupation	(0010,2180)
+N	Y	X							C		
+Operators’ Identification Sequence	(0008,1072)
+N	Y	X/D									
+Operators’ Name	(0008,1070)
+N	Y	X/Z/D									
+Original Attributes Sequence	(0400,0561)
+N	Y	X									
+Order Callback Phone Number	(0040,2010)
+N	N	X									
+Order Entered By	(0040,2008)
+N	N	X									
+Order Enterer Location	(0040,2009)
+N	N	X									
+Other Patient IDs	(0010,1000)
+N	Y	X									
+Other Patient IDs Sequence	(0010,1002)
+N	Y	X									
+Other Patient Names	(0010,1001)
+N	Y	X									
+Overlay Comments	(60xx,4000)
+Y	N	X									C
+Overlay Data	(60xx,3000)
+N	Y	X									C
+Overlay Date	(0008,0024)
+Y	Y	X					K	C			
+Overlay Time	(0008,0034)
+Y	Y	X					K	C			
+Palette Color Lookup Table UID	(0028,1199)
+N	Y	U		K							
+Participant Sequence	(0040,A07A)
+N	Y	X									
+Patient Address	(0010,1040)
+N	N	X									
+Patient Comments	(0010,4000)
+N	Y	X							C		
+Patient ID	(0010,0020)
+N	Y	Z									
+Patient Sex Neutered	(0010,2203)
+N	Y	X/Z				K					
+Patient State	(0038,0500)
+N	N	X				C			C		
+Patient Transport Arrangements	(0040,1004)
+N	N	X									
+Patient’s Age	(0010,1010)
+N	Y	X				K					
+Patient’s Birth Date	(0010,0030)
+N	Y	Z									
+Patient’s Birth Name	(0010,1005)
+N	N	X									
+Patient’s Birth Time	(0010,0032)
+N	Y	X									
+Patient’s Institution Residence	(0038,0400)
+N	N	X									
+Patient’s Insurance Plan Code Sequence	(0010,0050)
+		X									
+Patient’s Mother’s Birth Name	(0010,1060)
+N	N	X									
+Patient’s Name	(0010,0010)
+N	Y	Z									
+Patient’s Primary Language Code Sequence	(0010,0101)
+		X									
+Patient’s Primary Language Modifier Code Sequence	(0010,0102)
+		X									
+Patient’s Religious Preference	(0010,21F0)
+N	N	X									
+Patient’s Sex	(0010,0040)
+N	Y	Z				K					
+Patient’s Size	(0010,1020)
+N	Y	X				K					
+Patient’s Telephone Number	(0010,2154)
+N	N	X									
+Patient’s Weight	(0010,1030)
+N	Y	X				K					
+Performed Location	(0040,0243)
+N	N	X									
+Performed Procedure Step Description	(0040,0254)
+N	Y	X							C		
+Performed Procedure Step ID	(0040,0253)
+N	Y	X									
+Performed Procedure Step Start Date	(0040,0244)
+N	Y	X					K	C			
+Performed Procedure Step Start Time	(0040,0245)
+N	Y	X					K	C			
+Performed Station AE Title	(0040,0241)
+N	N	X			K						
+Performed Station Geographic Location Code Sequence	(0040,4030)
+N	N	X			K						
+Performed Station Name	(0040,0242)
+N	N	X			K						
+Performed Station Name Code Sequence	(0040,0248)
+N	N	X			K						
+Performing Physicians’ Identification Sequence	(0008,1052)
+N	Y	X									
+Performing Physicians’ Name	(0008,1050)
+N	Y	X									
+Person Address	(0040,1102)
+N	Y	X									
+Person Identification Code Sequence	(0040,1101)
+N	Y	D									
+Person Name	(0040,A123)
+N	Y	D									
+Person Telephone Numbers	(0040,1103)
+N	Y	X									
+Physician Approving Interpretation	(4008,0114)
+Y	N	X									
+Physician Reading Study Identification Sequence	(0008,1062)
+N	Y	X									
+Physician(s) of Record	(0008,1048)
+N	Y	X									
+Physician(s) of Record Identification Sequence	(0008,1049)
+N	Y	X									
+Placer Order Number of Imaging Service Request	(0040,2016)
+N	Y	Z									
+Plate ID	(0018,1004)
+N	Y	X			K						
+Pre-Medication	(0040,0012)
+N	N	X				C					
+Pregnancy Status	(0010,21C0)
+N	N	X				K					
+Protocol Name	(0018,1030)
+N	Y	X/D							C		
+Reason for Imaging Service Request	(0040,2001)
+Y	N	X							C		
+Reason for Study	(0032,1030)
+Y	N	X							C		
+Referenced Digital Signature Sequence	(0400,0402)
+N	Y	X									
+Referenced Frame of Reference UID	(3006,0024)
+N	Y	U		K							
+Referenced General Purpose Scheduled Procedure Step Transaction UID	(0040,4023)
+N	N	U		K							
+Referenced Image Sequence	(0008,1140)
+N	Y	X/Z/U*		K							
+Referenced Patient Alias Sequence	(0038,1234)
+N	N	X									
+Referenced Patient Sequence	(0008,1120)
+N	Y	X		X							
+Referenced Performed Procedure Step Sequence	(0008,1111)
+N	Y	X/Z/D		K							
+Referenced SOP Instance MAC Sequence	(0400,0403)
+N	Y	X									
+Referenced SOP Instance UID	(0008,1155)
+N	Y	U		K							
+Referenced SOP Instance UID in File	(0004,1511)
+N	N	U		K							
+Referenced Study Sequence	(0008,1110)
+N	Y	X/Z		K							
+Referring Physician’s Address	(0008,0092)
+N	N	X									
+Referring Physician’s Identification Sequence	(0008,0096)
+N	Y	X									
+Referring Physician’s Name	(0008,0090)
+N	Y	Z									
+Referring Physician’s Telephone Numbers	(0008,0094)
+N	N	X									
+Region of Residence	(0010,2152)
+N	N	X									
+Related Frame of Reference UID	(3006,00C2)
+N	Y	U		K							
+Request Attributes Sequence	(0040,0275)
+N	Y	X							C		
+Requested Contrast Agent	(0032,1070)
+N	N	X							C		
+Requested Procedure Comments	(0040,1400)
+N	N	X							C		
+Requested Procedure Description	(0032,1060)
+N	Y	X/Z							C		
+Requested Procedure ID	(0040,1001)
+N	N	X									
+Requested Procedure Location	(0040,1005)
+N	N	X									
+Requested SOP Instance UID	(0000,1001)
+N	N	U		K							
+Requesting Physician	(0032,1032)
+N	N	X									
+Requesting Service	(0032,1033)
+N	N	X									
+Responsible Organization	(0010,2299)
+N	Y	X									
+Responsible Person	(0010,2297)
+N	Y	X									
+Results Comments	(4008,4000)
+Y	N	X							C		
+Results Distribution List Sequence	(4008,0118)
+Y	N	X									
+Results ID Issuer	(4008,0042)
+Y	N	X									
+Reviewer Name	(300E,0008)
+N	Y	X/Z									
+Scheduled Human Performers Sequence	(0040,4034)
+N	N	X									
+Scheduled Patient Institution Residence	(0038,001E)
+Y	N	X									
+Scheduled Performing Physician Identification Sequence	(0040,000B)
+N	N	X									
+Scheduled Performing Physician Name	(0040,0006)
+N	N	X									
+Scheduled Procedure Step End Date	(0040,0004)
+N	N	X					K	C			
+Scheduled Procedure Step End Time	(0040,0005)
+N	N	X					K	C			
+Scheduled Procedure Step Description	(0040,0007)
+N	Y	X							C		
+Scheduled Procedure Step Location	(0040,0011)
+N	N	X			K						
+Scheduled Procedure Step Start Date	(0040,0002)
+N	N	X					K	C			
+Scheduled Procedure Step Start Time	(0040,0003)
+N	N	X					K	C			
+Scheduled Station AE Title	(0040,0001)
+N	N	X			K						
+Scheduled Station Geographic Location Code Sequence	(0040,4027)
+N	N	X			K						
+Scheduled Station Name	(0040,0010)
+N	N	X			K						
+Scheduled Station Name Code Sequence	(0040,4025)
+N	N	X			K						
+Scheduled Study Location	(0032,1020)
+Y	N	X			K						
+Scheduled Study Location AE Title	(0032,1021)
+Y	N	X			K						
+Series Date	(0008,0021)
+N	Y	X/D					K	C			
+Series Description 	(0008,103E)
+N	Y	X							C		
+Series Instance UID	(0020,000E)
+N	Y	U		K							
+Series Time	(0008,0031)
+N	Y	X/D					K	C			
+Service Episode Description	(0038,0062)
+N	Y	X							C		
+Service Episode ID	(0038,0060)
+N	Y	X									
+Smoking Status	(0010,21A0)
+N	N	X				K					
+SOP Instance UID	(0008,0018)
+N	Y	U		K							
+Source Image Sequence	(0008,2112)
+N	Y	X/Z/U*		K							
+Special Needs	(0038,0050)
+N	N	X				C					
+Station Name	(0008,1010)
+N	Y	X/Z/D			K						
+Storage Media File-set UID	(0088,0140)
+N	Y	U		K							
+Study Comments	(0032,4000)
+Y	N	X							C		
+Study Date	(0008,0020)
+N	Y	Z					K	C			
+Study Description	(0008,1030)
+N	Y	X							C		
+Study ID	(0020,0010)
+N	Y	Z									
+Study ID Issuer	(0032,0012)
+Y	N	X									
+Study Instance UID	(0020,000D)
+N	Y	U		K							
+Study Time	(0008,0030)
+N	Y	Z					K	C			
+Synchronization Frame of Reference UID	(0020,0200)
+N	Y	U		K							
+Template Extension Creator UID	(0040,DB0D)
+Y	N	U		K							
+Template Extension Organization UID	(0040,DB0C)
+Y	N	U		K							
+Text Comments	(4000,4000)
+Y	N	X									
+Text String	(2030,0020)
+N	N	X									
+Timezone Offset From UTC	(0008,0201)
+N	Y	X					K	C			
+Topic Author	(0088,0910)
+Y	N	X									
+Topic Key Words	(0088,0912)
+Y	N	X									
+Topic Subject	(0088,0906)
+Y	N	X									
+Topic Title	(0088,0904)
+Y	N	X									
+Transaction UID	(0008,1195)
+N	N	U		K							
+Verifying Observer Identification Code Sequence	(0040,A088)
+N	Y	Z									
+Verifying Observer Name	(0040,A075)
+N	Y	D									
+Verifying Observer Sequence	(0040,A073)
+N	Y	D									
+Verifying Organization	(0040,A027)
+N	Y	X									
+Visit Comments	(0038,4000)
+N	N	X							C		
