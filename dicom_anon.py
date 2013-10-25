@@ -30,6 +30,8 @@ import logging
 from datetime import datetime
 from optparse import OptionParser
 from functools import partial
+from dicom.sequence import Sequence 
+from dicom.dataset import Dataset
 
 logger = logging.getLogger('anon')
 logger.setLevel(logging.INFO)
@@ -79,122 +81,7 @@ ALLOWED_FILE_META = {
   (0x2, 0x13):1 # Implementation Version Name
 }
 # Attributes taken from https://github.com/dicom/ruby-dicom
-ATTRIBUTES = {
-},
-    'replace': {
-        (0x8,0x12): '20000101', # Instance Creation Date
-        (0x8,0x13): '000000.00', # Instance Creation Time
-        (0x8,0x21): '20000101', # Series Date
-        (0x8,0x23): '20000101', # Image Date
-        (0x8,0x30): '000000.00', # Study Time
-        (0x8,0x33): '000000.00', # Image Time
-        (0x10,0x30): '20000101',  # Patient's Birth Date
-        (0x10,0x40): '', # Patient's Sex
-        (0x10,0x1001): '', # Other Patient Names
-        (0x10,0x1010): '',# Patients Age
-        (0x10,0x1020): '',# Patient Size
-        (0x10,0x1030): '', # Patient Weight
-        (0x20,0x4000): '',# Image Comments
-    },
-    'delete':{
-        (0x0,0x1000): 1,# Affected SOP Instance UID - BALC X
-        (0x8,0x22): 1,  # Acquisition Date - BALC X/Z
-        (0x8,0x2A): 1,  # Acquisition DateTime - BALC X/D
-        (0x32,0x30): 1, # Acquisition Time - BALC X/Z
-        (0x8,0x1140):1, # Referenced Image Sequence
-        (0x8,0x1110):1, # Referenced Study Sequence
-        (0x8,0x1120):1, # Referenced Patient Sequence
-        (0x8,0x114A):1, # Referenced Instance Sequence
-        (0x8,0x1150):1, # Referenced SOP Class UID Sequence
-        (0x8,0x1155):1, # Referenced SOP ClassInstance UID Sequence 
-        (0x10,0x50):1, # Patient Insurance Plan Sequence
-        (0x10,0x1002):1, # Other Patient ID sequence
-        (0x10,0x1050):1, # Patient Insurance Plan Sequence
-        (0x10,0x1040):1, # Patient's Address    
-        (0x10,0x1060):1, # Patient's Mother's Birth Name
-        (0x10,0x1080):1, # Military Rank
-        (0x10,0x1081):1, # Branch of Service - BALC X
-        (0x10,0x1090):1, # Medical Record Location
-        (0x10,0x2000):1, # Medical alerts
-        (0x10,0x2110):1, # Allergies - BALC X
-        (0x10,0x2150):1, # Country of Residence
-        (0x10,0x2152):1, # Region of Residence
-        (0x10,0x2154):1, # Patient Phone
-        (0x10,0x2160):1, # Ethnic Group
-        (0x10,0x2180):1, # Occupation Group
-        (0x10,0x2297):1, # Responsible Persons Name
-        (0x10,0x2299):1, # Responsible Organization
-        (0x10,0x21A0):1, # Smoking Status
-        (0x10,0x21B0):1, # Additional Patient History - BALC X
-        (0x10,0x21C0):1, # Pregnancy Status
-        (0x10,0x21D0):1, # Last Menstrualjkate
-        (0x10,0x21F0):1, # Religious Pref
-        (0x18,0x1007):1, # Cassette ID - BALC X
-        (0x18,0x1200):1, # Date of Last Calibration
-        (0x18,0x1201):1, # Time of Last Calibration
-        (0x18,0x1400):1, # Acquisition Device Processing Description - BALC X/D
-        (0x18,0x9424):1, # Acquisition Protocol Description - BALC X
-        (0x18,0x4000):1, # Acquisition Comments - BALC X
-        (0x20,0x52):1, # Frame of reference UID
-        (0x20,0x9161):1, # Concatenation UID - BALC X
-        (0x32,0x12):1, # Study ID Issuer RET
-        (0x32,0x1032):1, # Requesting Physician
-        (0x32,0x1064):1, # Requested Procedure Sequence
-        (0x38,0x10):1, # Admission ID - BALC X
-        (0x38,0x20):1, # Admission Date - BALC X
-        (0x38,0x21):1, # Admission Time - BALC X
-        (0x40,0x275):1, # Requested Attributes Sequence
-        (0x40,0x555):1, # Acquisition Context Sequence- X BALC
-        (0x40,0x1001):1, # Requested Procedure ID
-        (0x40,0x1010):1, # Names of intended recipient of results
-        (0x40,0x1011):1, # ID sequence recipient of results
-        (0x40,0x6):1, # Scheduled Performing Physician's Name
-        (0x40,0x280):1, # Comments on Performed Procedure Step - BALC X
-        (0x40,0x1012):1, # Reason for peformed procedure sequence
-        (0x40,0x1101):1, # Person Identification Sequence
-        (0x40,0x1102):1, # Person's address
-        (0x40,0x1104):1, # Person's telephone numbers
-        (0x40,0x1400):1, # Requested Procedure Comments
-        (0x40,0x2001):1, # Reason for imaging servie request RET
-        (0x40,0x2008):1, # Order entered by
-        (0x40,0x3001):1, # Confidentiality Constraint on Patient Data Description - BALC X
-        (0x40,0x4035):1, # Actual human performers sequence - BALC X
-        (0x40,0x4037):1, # Human performers name
-        (0x40,0xA075):1, # Verifying observers name
-        (0x40,0xA078):1, # Author Observer Sequence - BALC X
-        (0x40,0xA123):1, # Person Name
-        (0x40,0xA124):1, # UID
-        (0x70,0x83):1, # Content Creators Name
-        (0x72,0x6A):1, # Selector PN Value
-        (0x3006,0xA6):1, # ROI Interpreter
-        (0x300E,0x08):1, # Reviewer Name
-        (0x4000,0x10):1, # Arbitrary - BALC X
-        (0x4008,0x102):1, # Interpretation Recorder
-        (0x4008,0x10A):1, # Interpretation Transcriber
-        (0x4008,0x10B):1, # Interpretation Text
-        (0x4008,0x10C):1, # Interpretation Author
-        (0x4008,0x114):1, # Physician Approving Interpretation
-        (0x4008,0x119):1, # Distribution Name
-        # Additional Attributes as recommended by Digital Imaging and Communications in Medicine (DICOM)
-        # Supplement 55: Attribute Level Confidentiality (including De-identification)
-        (0x8,0x14):1, # Instance Creator UID
-        (0x8,0x1040):1, # Institutional Name
-        (0x8,0x1080):1, # Admitting Diagnoses Description - BALC X
-        (0x8,0x2111):1, # Derivation Description 
-        (0x10,0x32):1, # Patient's Birth Time
-        (0x10,0x1000):1, # Other Patient ID's
-        (0x10,0x4000):1, # Patient Comments
-        (0x18,0x1000):1, # Device Serial Number
-        (0x18,0x1030):1, # Protocol Name
-        (0x20,0x200):1, # Synchronization Frame of Reference UID
-        (0x40,0x275):1, # Request Attribute Sequence
-        (0x40,0xA730):1, # Content Sequence
-        (0x88,0x140):1, # Storage Media File-set UID
-        (0x3006,0x24):1, # Referenced Frame of Reference UID
-        (0x3006,0xC2):1, # Related Frame of Reference UID
-        (0x20,0x10):1, # Study ID
-    }
-}
+
 AUDIT = { 
     STUDY_INSTANCE_UID:1,
     SERIES_INSTANCE_UID:1,
@@ -462,7 +349,17 @@ ANNEX_E = {
     (0x0040,0xA075): ['N', 'Y', 'D', '', '', '', '', '', '', '', ''], # Verifying Observer Name
     (0x0040,0xA073): ['N', 'Y', 'D', '', '', '', '', '', '', '', ''], # Verifying Observer Sequence
     (0x0040,0xA027): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Verifying Organization
-    (0x0038,0x4000): ['N', 'N', 'X', '', '', '', '', '', '', 'C', ''] # Visit Comments
+    (0x0038,0x4000): ['N', 'N', 'X', '', '', '', '', '', '', 'C', ''], # Visit Comments
+    
+    # The following are additions to the standard
+    (0x8,0x1150):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Referenced SOP Class UID Sequence
+    (0x18,0x1200):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Date of Last Calibration
+    (0x18,0x1201):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Time of Last Calibration
+    (0x32,0x1064):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Requested Procedure Sequence
+    (0x40,0x1012):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Reason for peformed procedure sequence
+    (0x40,0xA124):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # UID
+    (0x72,0x6A):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Selector PN Value
+    (0x3006,0xA6):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # ROI Interpreter
 }
 
 # Return true if file should be quarantined
@@ -533,21 +430,6 @@ def get_next_pk(tag):
     else:
         return 1
 
-def keep(e, white_list=None):
-   keep_list = [SOP_CLASS_UID]
-
-   for attr in keep_list:
-       if e.tag == attr:
-           return True
-
-   if ATTRIBUTES['replace'].get((e.tag.group, e.tag.element), None) or \
-      ATTRIBUTES['audit'].get((e.tag.group, e.tag.element), None):
-       return True
-
-   if white_list and white_list.get((e.tag.group, e.tag.element), None):
-       return True
-   return False
-
 def generate_uid(org_root):
     n = datetime.now()
     while True:
@@ -560,6 +442,7 @@ generate_uid.last = None
 
 
 def enforce_profile(ds, e, profile, white_list, study_pk):
+    white_listed = False
     if profile == 'clean':
         # If it's list in the ANNEX, we need to specifically be able to clean it
         if (e.tag in ANNEX_E and ANNEX[e.tag][9]=='C') or !(e.tag in ANNEX_E):
@@ -567,14 +450,14 @@ def enforce_profile(ds, e, profile, white_list, study_pk):
             if white_listed:
                 cleaned = None
             else:
-                cleaned = basic(ds, e)
+                cleaned = basic(ds, e, study_pk)
         else:
-            basic(ds, e)
+            basic(ds, e, study_pk)
     else:
         # We are assuming basic
         # TODO need to revisit this because for sequences, X might mean to remove the whole sequence, not
         # dive into it and clean it
-        cleaned = basic(ds, e)
+        cleaned = basic(ds, e, study_pk)
         
     if e.tag in audit.keys():
        if cleaned != None: # we didn't change it
@@ -582,12 +465,17 @@ def enforce_profile(ds, e, profile, white_list, study_pk):
     if cleaned != None and e.tag in ds:
        ds[e.tag] = cleaned
 
-def basic:(ds, e):
+    # Tell our caller if we cleaned this element
+    if e.tag in ANNEX_E or white_listed:
+        return True
+    return False
+
+def basic:(ds, e, study_pk):
     cleaned = audit_get(e, study_uid_pk=study_pk)
     if cleaned != None:
         return cleaned
     if e.tag in ANNEX_E:
-        rule = ANNEX_E[e.tag][2][0] # For now we aren't going to worry about IOD conformance, just do the first option 
+        rule = ANNEX_E[e.tag][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option 
         if rule == 'D':
             cleaned = replace_vr_d(e, org_root)
         if rule == 'Z':
@@ -621,24 +509,6 @@ def replace_vr_d(w, org_root):
     else:
         cleaned = '%s %d' % (e.name, get_next_pk(e))
     return cleaned
-    
-
-def audit_handler(ds, e, study_pk=None, org_root=None):
-    if e.tag in AUDIT.keys():
-        cleaned = audit_get(e, study_uid_pk=study_pk)
-        if cleaned == None:
-            if e.VR == 'DT':
-                cleaned = CLEANED_TIME
-            elif e.VR == 'DA':
-                cleaned = CLEANED_DATE
-            elif e.VR == 'UI':
-                cleaned = generate_uid(org_root)
-            else:
-                cleaned = '%s %d' % (e.name, get_next_pk(e))
-            audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
-        ds[e.tag].value = str(cleaned)
-        return True
-    return False
 
 def delete_handler(ds, e):
     if e.tag in ATTRIBUTES['delete'].keys():
@@ -652,9 +522,7 @@ def replace_handler(ds, e):
        return True
     return False
 
-def vr_handler(ds, e, white_list=None):
-    if keep(e, white_list):
-        return False
+def vr_handler(ds, e):
     if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM']:
         del ds[e.tag]
         return True
@@ -662,15 +530,34 @@ def vr_handler(ds, e, white_list=None):
 
 # Remove group 0x1000 which contains personal
 # information
-def personal_handler(ds,e, white_list=None):
-    if keep(e, white_list):
-        return False
+def personal_handler(ds,e):
     if e.tag.group == 0x1000:
         del ds[e.tag]
         return True
     return False
 
-def white_list_handler(ds, e, white_list=None):
+# Curve data is (0x50xx,0xxxxx)
+def curve_data_handler(ds, e):
+    if hex((e.tag.group)/0xFF) == 0x50:
+        del ds[e.tag]
+        return True
+     return False
+     
+# Overlay comment is (0x60xx,0x4000) 
+def overlay_comment_handler(ds, e):
+    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000):
+        del ds[e.tag]
+        return True
+    return False
+
+# Overy data is and (0x60xx,0x3000)   
+def overlay_data_handler(ds, e):
+    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000):
+        del ds[e.tag]
+        return True
+    return False
+
+def white_list_handler(ds, e):
     if white_list.get((e.tag.group, e.tag.element), None):
         if not e.value.lower().strip() in white_list[(e.tag.group, e.tag.element)]:
             logger.info('"%s" not in white list for %s' % (e.value, e.name))
@@ -678,18 +565,26 @@ def white_list_handler(ds, e, white_list=None):
         return True
     return False
 
-def clean_cb(ds, e, study_pk, org_root=None, white_list=None):
-    done = audit_handler(ds, e, study_pk=study_pk, org_root=org_root)
+def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, overlay=False):
+    done = enforce_profile(ds, e, profile=profile, study_pk, org_root=org_root, white_list=white_list)
     
-    done = vr_handler(ds, e, white_list=white_list)
+    done = vr_handler(ds, e)
     if done: 
         return
-    done = personal_handler(ds, e, white_list=white_list)
+    if !overlay:
+        done = overlay_data_handler(ds, e)
+        if done:
+            return
+    
+    done = overlay_comment_hanlder(ds, e)
     if done:
         return
-
-    if white_list:
-        white_list_handler(ds, e, white_list=white_list)
+    
+    done = curve_data_handler(ds, e)
+    if done:
+        return
+        
+    personal_handler(ds, e)
 
 def convert_json_white_list(h):
     value = {}
@@ -705,7 +600,7 @@ def clean_meta(ds, e):
     else:
         del ds[e.tag]
 
-def anonymize(ds, white_list, org_root, profile):
+def anonymize(ds, white_list, org_root, profile, overlay):
     # anonymize study_uid, save off id
     cleaned_study_uid = audit_get(ds[STUDY_INSTANCE_UID])
     if cleaned_study_uid == None:
@@ -718,7 +613,7 @@ def anonymize(ds, white_list, org_root, profile):
     ds.remove_private_tags()
 
     # Walk entire file
-    ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list))
+    ds.walk(partial(clean_cb, study_pk=study_pk, org_root=org_root, white_list=white_list, profile=profile, overlay=overlay))
 
     # Fix file meta data portion
     if MEDIA_STORAGE_SOP_INSTANCE_UID in ds.file_meta:
@@ -727,7 +622,7 @@ def anonymize(ds, white_list, org_root, profile):
     return ds
 
 def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], 
-        org_root='5.555.5', white_list_file = None, log_file=None, rename=False, profile="basic"):
+        org_root='5.555.5', white_list_file = None, log_file=None, rename=False, profile="basic", overlay = False):
     
     white_list = None
 
@@ -780,7 +675,19 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
-             ds = anonymize(ds, white_list, org_root, profile)
+             ds = anonymize(ds, white_list, org_root, profile, overlay)
+             
+             # Set Patient Identity Removed to YES
+             ds[(0x12,0x62)] = "YES"
+             # Set the De-identification method code sequene
+             method_ds = DataSet()
+             
+             if (profile == "clean"):
+                 method_ds[0x8,0x102]= dicom.multival.MultiValue(dicom.valuerep.DS, ["113100", "113105"])
+             else:
+                 method_ds[0x8,0x102]= dicom.multival.MultiValue(dicom.valuerep.DS, ["113100"])
+             ds[(0x12,0x64)] = Sequence([method_ds])
+             
              if rename:
                  clean_name = os.path.join(destination_dir, ds[SOP_INSTANCE_UID].value)
              else:
@@ -881,7 +788,11 @@ if __name__ == "__main__":
             help="Application Level Confidentiality Profile from DICOM 3.15 Annex E. Supported"
             " optons are 'basic' and 'clean'. 'basic means to adhere to the Basic Application Level"
             " Confidentiality Profile. 'clean' means adhere to the profile with the 'Clean Descriptors Option'."
-            " Defaults to 'basic'. If specifying 'clean' you must also specify the 'white-list' option.")        
+            " Defaults to 'basic'. If specifying 'clean' you must also specify the 'white-list' option.")
+    
+    parser.add_option('-k', "--keepoverlay", default=False, dest="overlay", action = "store_true",
+            help="Keep overlay data. Please note this will override the Basic Application Level Confidentiality Profile"
+            "which does not allow for overlay data")
 
     (options, args) = parser.parse_args()
 
@@ -898,4 +809,4 @@ if __name__ == "__main__":
 
     driver(ident_dir, clean_dir, quarantine_dir=quarantine_dir, audit_file=audit_file, 
             allowed_modalities=allowed_modalities, org_root=org_root, 
-            white_list_file=white_list_file, log_file=options.log_file, rename=options.rename,profile=options.profile)
+            white_list_file=white_list_file, log_file=options.log_file, rename=options.rename,profile=options.profile, overlay=options.overlay)
