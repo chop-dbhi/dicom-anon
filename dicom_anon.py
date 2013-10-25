@@ -365,31 +365,44 @@ ANNEX_E = {
 
 # Return true if file should be quarantined
 def quarantine(ds, allowed_modalities):
-    if SERIES_DESCR in ds:
-        series_desc = ds[SERIES_DESCR].strip().lower()
+    if SERIES_DESCR in ds and ds[SERIES_DESCR].value != None:
+        series_desc = ds[SERIES_DESCR].value.strip().lower()
         if 'patient protocol' in series_desc:
             return (True, 'patient protocol')
         elif 'save' in series_desc: # from link in comment below
             return (True, 'Likely screen capture')
+
     if MODALITY in ds:
-        modality = ds[MODALITY].value
-        if not modality.strip().lower() in allowed_modalities:
-            return (True, 'modality not allowed')
-    if BURNT_IN in ds:
+        modality = ds[MODALITY]
+        if modality.VM == 1:
+            modality = [modality.value]
+        for m in modality:
+            if m == None or not m.lower() in allowed_modalities:
+                return (True, 'modality not allowed')
+
+    if MODALITY not in  ds:
+        return (True, 'Modality missing')
+
+    if BURNT_IN in ds and ds[BURNT_IN].value != None:
         burnt_in = ds[BURNT_IN].value
         if burnt_in.strip().lower() in ['yes', 'y']:
             return (True, 'burnt-in data')
     # The following were taken from https://wiki.cancerimagingarchive.net/download/attachments/3539047/pixel-checker-filter.script?version=1&modificationDate=1333114118541&api=v2
     if IMAGE_TYPE in ds:
-        image_type = ds[IMAGE_TYPE].value
-        if 'save' in image_type.strip().lower():
-            return(True, 'Likely screen capture')
+        image_type = ds[IMAGE_TYPE]
+        if image_type.VM == 1:
+            image_type = [image_type.value]
+        for i in image_type:
+            if i != None and 'save' in i.strip().lower():
+                return(True, 'Likely screen capture')
+
     if MANUFACTURER in ds:
-        manufacturer = ds[MANUFACTURER].value.strip.lower()
+        manufacturer = ds[MANUFACTURER].value.strip().lower()
         if 'north american imaging, inc' in manufacturer or 'pacsgear' in manufacturer:
             return(True, 'Manufacturer is suspect')
+
     if MANUFACTURER_MODEL_NAME in ds:
-        model_name = ds[MANUFACTURER_MODEL_NAME].value.strip.lower()
+        model_name = ds[MANUFACTURER_MODEL_NAME].value.strip().lower()
         if "the DiCOM box" in model_name:
             return(True, "Manufacturer model name is suspect")     
     return (False, '')
@@ -442,15 +455,14 @@ def generate_uid(org_root):
 generate_uid.last = None
 
 
-def enforce_profile(ds, e, study_pk,  profile, white_list):
+def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
     white_listed = False
+    cleaned = None
     if profile == 'clean':
         # If it's list in the ANNEX, we need to specifically be able to clean it
-        if (e.tag in ANNEX_E and ANNEX[e.tag][9]=='C') or  not (e.tag in ANNEX_E):
+        if (e.tag in ANNEX_E and ANNEX_E[(e.tag.group, e.tag.element)][9]=='C') or not (e.tag in ANNEX_E.keys()):
             white_listed = white_list_handler(ds, e, white_list)
-            if white_listed:
-                cleaned = None
-            else:
+            if not white_listed:
                 cleaned = basic(ds, e, study_pk)
         else:
             basic(ds, e, study_pk)
@@ -458,29 +470,30 @@ def enforce_profile(ds, e, study_pk,  profile, white_list):
         # We are assuming basic
         # TODO need to revisit this because for sequences, X might mean to remove the whole sequence, not
         # dive into it and clean it
-        cleaned = basic(ds, e, study_pk)
-        
-    if e.tag in audit.keys():
-       if cleaned != None: # we didn't change it
+        cleaned = basic(ds, e, study_pk, org_root)
+
+    if e.tag in AUDIT.keys():
+       if cleaned != None and not (e.tag == STUDY_INSTANCE_UID):
            audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
     if cleaned != None and e.tag in ds:
-       ds[e.tag] = cleaned
+       ds[e.tag].value = cleaned
 
     # Tell our caller if we cleaned this element
-    if e.tag in ANNEX_E or white_listed:
+    if e.tag in ANNEX_E.keys() or white_listed:
         return True
     return False
 
-def basic(ds, e, study_pk):
+def basic(ds, e, study_pk, org_root):
     cleaned = audit_get(e, study_uid_pk=study_pk)
     if cleaned != None:
         return cleaned
-    if e.tag in ANNEX_E:
-        rule = ANNEX_E[e.tag][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option 
+    if e.tag in ANNEX_E.keys():
+        rule = ANNEX_E[(e.tag.group, e.tag.element)][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option
+        print "%s %s" % (rule, e.name)
         if rule == 'D':
             cleaned = replace_vr_d(e, org_root)
         if rule == 'Z':
-            cleaned = replace_vr_z(e)
+            cleaned = replace_vr_d(e, org_root)
         if rule == 'X':
             del ds[e.tag]
             cleaned = 'Removed by dicom-anon'
@@ -500,15 +513,20 @@ def replace_vr_z(e):
         cleaned = ""
     return cleaned
 
-def replace_vr_d(w, org_root):
+def replace_vr_d(e, org_root):
     if e.VR == 'DT':
         cleaned = CLEANED_TIME
     elif e.VR == 'DA':
         cleaned = CLEANED_DATE
+    elif e.VR == 'TM':
+        cleaned = CLEANED_TIME
     elif e.VR == 'UI':
         cleaned = generate_uid(org_root)
     else:
-        cleaned = '%s %d' % (e.name, get_next_pk(e))
+        if e.name and len(e.name):
+            cleaned = ('%s %d' % (e.name, get_next_pk(e))).encode('ascii')
+        else:
+            cleaned = ''
     return cleaned
 
 def delete_handler(ds, e):
@@ -568,6 +586,8 @@ def white_list_handler(ds, e):
 
 def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, overlay=False):
     done = enforce_profile(ds, e, study_pk, profile=profile, org_root=org_root, white_list=white_list)
+    if done:
+        return
     
     done = vr_handler(ds, e)
     if done: 
@@ -577,7 +597,7 @@ def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, o
         if done:
             return
     
-    done = overlay_comment_hanlder(ds, e)
+    done = overlay_comment_handler(ds, e)
     if done:
         return
     
@@ -679,16 +699,20 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              ds = anonymize(ds, white_list, org_root, profile, overlay)
              
              # Set Patient Identity Removed to YES
-             ds[(0x12,0x62)] = "YES"
+             t = dicom.tag.Tag((0x12,0x62))
+             ds[t] = dicom.dataelem.DataElement(t,"CS","YES")
+             
              # Set the De-identification method code sequene
-             method_ds = DataSet()
-             
+             method_ds = Dataset()
+             t = dicom.tag.Tag((0x8, 0x102))
              if (profile == "clean"):
-                 method_ds[0x8,0x102]= dicom.multival.MultiValue(dicom.valuerep.DS, ["113100", "113105"])
+                 method_ds[t] = dicom.dataelem.DataElement(t, "DS", dicom.multival.MultiValue(dicom.valuerep.DS, ["113100", "113105"]))
              else:
-                 method_ds[0x8,0x102]= dicom.multival.MultiValue(dicom.valuerep.DS, ["113100"])
-             ds[(0x12,0x64)] = Sequence([method_ds])
+                 method_ds[t] = dicom.dataelem.DataElement(t, "DS", dicom.multival.MultiValue(dicom.valuerep.DS, ["113100"]))
+             t = dicom.tag.Tag((0x12, 0x64))
+             ds[t] = dicom.dataelem.DataElement(t, "SQ", Sequence([method_ds]))
              
+             print ds
              if rename:
                  clean_name = os.path.join(destination_dir, ds[SOP_INSTANCE_UID].value)
              else:
