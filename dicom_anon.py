@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #Copyright (c) 2013, The Children's Hospital of Philadelphia
 #All rights reserved.
 #
@@ -114,7 +115,7 @@ ANNEX_E = {
     (0x0018,0x9424): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Acquisition Protocol Description
     (0x0008,0x0032): ['N', 'Y', 'X/Z', '', '', '', '', 'K', 'C', '', ''], # Acquisition Time
     (0x0040,0x4035): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Actual Human Performers Sequence
-    (0x0010,0x21B0): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Additional Patient’s History
+    (0x0010,0x21B0): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Additional Patient's History
     (0x0038,0x0010): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Admission ID
     (0x0038,0x0020): ['N', 'N', 'X', '', '', '', '', 'K', 'C', '', ''], # Admitting Date
     (0x0008,0x1084): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Admitting Diagnoses Code Sequence
@@ -129,8 +130,8 @@ ANNEX_E = {
     (0x0040,0x0280): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Comments on Performed Procedure Step
     (0x0020,0x9161): ['N', 'Y', 'U', '', 'K', '', '', '', '', '', ''], # Concatenation UID
     (0x0040,0x3001): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Confidentiality Constraint on Patient Data Description
-    (0x0070,0x0084): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Content Creator’s Name
-    (0x0070,0x0086): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Content Creator’s Identification Code Sequence
+    (0x0070,0x0084): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Content Creator's Name
+    (0x0070,0x0086): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Content Creator's Identification Code Sequence
     (0x0008,0x0023): ['N', 'Y', 'Z/D', '', '', '', '', 'K', 'C', '', ''], # Content Date
     (0x0040,0xA730): ['N', 'Y', 'X', '', '', '', '', '', '', '', 'C'], # Content Sequence
     (0x0008,0x0033): ['N', 'Y', 'Z/D', '', '', '', '', 'K', 'C', '', ''], # Content Time
@@ -205,8 +206,8 @@ ANNEX_E = {
     (0x0008,0x1060): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Name of Physician(s) Reading Study
     (0x0040,0x1010): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Names of Intended Recipient of Results
     (0x0010,0x2180): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Occupation
-    (0x0008,0x1072): ['N', 'Y', 'X/D', '', '', '', '', '', '', '', ''], # Operators’ Identification Sequence
-    (0x0008,0x1070): ['N', 'Y', 'X/Z/D', '', '', '', '', '', '', '', ''], # Operators’ Name
+    (0x0008,0x1072): ['N', 'Y', 'X/D', '', '', '', '', '', '', '', ''], # Operators' Identification Sequence
+    (0x0008,0x1070): ['N', 'Y', 'X/Z/D', '', '', '', '', '', '', '', ''], # Operators' Name
     (0x0400,0x0561): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Original Attributes Sequence
     (0x0040,0x2010): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Order Callback Phone Number
     (0x0040,0x2008): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Order Entered By
@@ -226,21 +227,21 @@ ANNEX_E = {
     (0x0010,0x2203): ['N', 'Y', 'X/Z', '', '', '', 'K', '', '', '', ''], # Patient Sex Neutered
     (0x0038,0x0500): ['N', 'N', 'X', '', '', '', 'C', '', '', 'C', ''], # Patient State
     (0x0040,0x1004): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient Transport Arrangements
-    (0x0010,0x1010): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient’s Age
-    (0x0010,0x0030): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Patient’s Birth Date
-    (0x0010,0x1005): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient’s Birth Name
-    (0x0010,0x0032): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Patient’s Birth Time
-    (0x0038,0x0400): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient’s Institution Residence
-    (0x0010,0x0050): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient’s Insurance Plan Code Sequence
-    (0x0010,0x1060): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient’s Mother’s Birth Name
-    (0x0010,0x0010): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Patient’s Name
-    (0x0010,0x0101): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient’s Primary Language Code Sequence
-    (0x0010,0x0102): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient’s Primary Language Modifier Code Sequence
-    (0x0010,0x21F0): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient’s Religious Preference
-    (0x0010,0x0040): ['N', 'Y', 'Z', '', '', '', 'K', '', '', '', ''], # Patient’s Sex
-    (0x0010,0x1020): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient’s Size
-    (0x0010,0x2154): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient’s Telephone Number
-    (0x0010,0x1030): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient’s Weight
+    (0x0010,0x1010): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient's Age
+    (0x0010,0x0030): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Patient's Birth Date
+    (0x0010,0x1005): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient's Birth Name
+    (0x0010,0x0032): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Patient's Birth Time
+    (0x0038,0x0400): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient's Institution Residence
+    (0x0010,0x0050): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient's Insurance Plan Code Sequence
+    (0x0010,0x1060): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient's Mother's Birth Name
+    (0x0010,0x0010): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Patient's Name
+    (0x0010,0x0101): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient's Primary Language Code Sequence
+    (0x0010,0x0102): ['', '', 'X', '', '', '', '', '', '', '', ''], # Patient's Primary Language Modifier Code Sequence
+    (0x0010,0x21F0): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient's Religious Preference
+    (0x0010,0x0040): ['N', 'Y', 'Z', '', '', '', 'K', '', '', '', ''], # Patient's Sex
+    (0x0010,0x1020): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient's Size
+    (0x0010,0x2154): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Patient's Telephone Number
+    (0x0010,0x1030): ['N', 'Y', 'X', '', '', '', 'K', '', '', '', ''], # Patient's Weight
     (0x0040,0x0243): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Performed Location
     (0x0040,0x0254): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Performed Procedure Step Description
     (0x0040,0x0253): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Performed Procedure Step ID
@@ -250,8 +251,8 @@ ANNEX_E = {
     (0x0040,0x4030): ['N', 'N', 'X', '', '', 'K', '', '', '', '', ''], # Performed Station Geographic Location Code Sequence
     (0x0040,0x0242): ['N', 'N', 'X', '', '', 'K', '', '', '', '', ''], # Performed Station Name
     (0x0040,0x0248): ['N', 'N', 'X', '', '', 'K', '', '', '', '', ''], # Performed Station Name Code Sequence
-    (0x0008,0x1052): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Performing Physicians’ Identification Sequence
-    (0x0008,0x1050): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Performing Physicians’ Name
+    (0x0008,0x1052): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Performing Physicians' Identification Sequence
+    (0x0008,0x1050): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Performing Physicians' Name
     (0x0040,0x1102): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Person Address
     (0x0040,0x1101): ['N', 'Y', 'D', '', '', '', '', '', '', '', ''], # Person Identification Code Sequence
     (0x0040,0xA123): ['N', 'Y', 'D', '', '', '', '', '', '', '', ''], # Person Name
@@ -278,10 +279,10 @@ ANNEX_E = {
     (0x0008,0x1155): ['N', 'Y', 'U', '', 'K', '', '', '', '', '', ''], # Referenced SOP Instance UID
     (0x0004,0x1511): ['N', 'N', 'U', '', 'K', '', '', '', '', '', ''], # Referenced SOP Instance UID in File
     (0x0008,0x1110): ['N', 'Y', 'X/Z', '', 'K', '', '', '', '', '', ''], # Referenced Study Sequence
-    (0x0008,0x0092): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Referring Physician’s Address
-    (0x0008,0x0096): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Referring Physician’s Identification Sequence
-    (0x0008,0x0090): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Referring Physician’s Name
-    (0x0008,0x0094): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Referring Physician’s Telephone Numbers
+    (0x0008,0x0092): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Referring Physician's Address
+    (0x0008,0x0096): ['N', 'Y', 'X', '', '', '', '', '', '', '', ''], # Referring Physician's Identification Sequence
+    (0x0008,0x0090): ['N', 'Y', 'Z', '', '', '', '', '', '', '', ''], # Referring Physician's Name
+    (0x0008,0x0094): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Referring Physician's Telephone Numbers
     (0x0010,0x2152): ['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Region of Residence
     (0x3006,0x00C2): ['N', 'Y', 'U', '', 'K', '', '', '', '', '', ''], # Related Frame of Reference UID
     (0x0040,0x0275): ['N', 'Y', 'X', '', '', '', '', '', '', 'C', ''], # Request Attributes Sequence
@@ -365,7 +366,7 @@ ANNEX_E = {
 # Return true if file should be quarantined
 def quarantine(ds, allowed_modalities):
     if SERIES_DESCR in ds:
-        series_desc = ds[SERIES_DESCR]..strip().lower()
+        series_desc = ds[SERIES_DESCR].strip().lower()
         if 'patient protocol' in series_desc:
             return (True, 'patient protocol')
         elif 'save' in series_desc: # from link in comment below
@@ -384,7 +385,7 @@ def quarantine(ds, allowed_modalities):
         if 'save' in image_type.strip().lower():
             return(True, 'Likely screen capture')
     if MANUFACTURER in ds:
-        manufacturer = 
+        manufacturer = ds[MANUFACTURER].value.strip.lower()
         if 'north american imaging, inc' in manufacturer or 'pacsgear' in manufacturer:
             return(True, 'Manufacturer is suspect')
     if MANUFACTURER_MODEL_NAME in ds:
@@ -441,11 +442,11 @@ def generate_uid(org_root):
 generate_uid.last = None
 
 
-def enforce_profile(ds, e, profile, white_list, study_pk):
+def enforce_profile(ds, e, study_pk,  profile, white_list):
     white_listed = False
     if profile == 'clean':
         # If it's list in the ANNEX, we need to specifically be able to clean it
-        if (e.tag in ANNEX_E and ANNEX[e.tag][9]=='C') or !(e.tag in ANNEX_E):
+        if (e.tag in ANNEX_E and ANNEX[e.tag][9]=='C') or  not (e.tag in ANNEX_E):
             white_listed = white_list_handler(ds, e, white_list)
             if white_listed:
                 cleaned = None
@@ -470,7 +471,7 @@ def enforce_profile(ds, e, profile, white_list, study_pk):
         return True
     return False
 
-def basic:(ds, e, study_pk):
+def basic(ds, e, study_pk):
     cleaned = audit_get(e, study_uid_pk=study_pk)
     if cleaned != None:
         return cleaned
@@ -482,7 +483,7 @@ def basic:(ds, e, study_pk):
             cleaned = replace_vr_z(e)
         if rule == 'X':
             del ds[e.tag]
-            cleaned = "Removed by dicom-anon"
+            cleaned = 'Removed by dicom-anon'
         if rule == 'K':
             pass
         if rule == 'U':
@@ -541,18 +542,18 @@ def curve_data_handler(ds, e):
     if hex((e.tag.group)/0xFF) == 0x50:
         del ds[e.tag]
         return True
-     return False
-     
+    return False
+
 # Overlay comment is (0x60xx,0x4000) 
 def overlay_comment_handler(ds, e):
-    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000):
+    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000:
         del ds[e.tag]
         return True
     return False
 
 # Overy data is and (0x60xx,0x3000)   
 def overlay_data_handler(ds, e):
-    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000):
+    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
         del ds[e.tag]
         return True
     return False
@@ -566,12 +567,12 @@ def white_list_handler(ds, e):
     return False
 
 def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, overlay=False):
-    done = enforce_profile(ds, e, profile=profile, study_pk, org_root=org_root, white_list=white_list)
+    done = enforce_profile(ds, e, study_pk, profile=profile, org_root=org_root, white_list=white_list)
     
     done = vr_handler(ds, e)
     if done: 
         return
-    if !overlay:
+    if not overlay:
         done = overlay_data_handler(ds, e)
         if done:
             return
