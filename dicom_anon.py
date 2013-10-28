@@ -468,9 +468,6 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
         else:
             basic(ds, e, study_pk)
     else:
-        # We are assuming basic
-        # TODO need to revisit this because for sequences, X might mean to remove the whole sequence, not
-        # dive into it and clean it
         cleaned = basic(ds, e, study_pk, org_root)
 
     if e.tag in AUDIT.keys():
@@ -485,6 +482,10 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
     return False
 
 def basic(ds, e, study_pk, org_root):
+    # Sequences are currently just removed
+    if e.VR == "SEQ":
+        del ds[e.tag]
+        return REMOVED_TEXT
     cleaned = audit_get(e, study_uid_pk=study_pk)
     # pydicom does not want to write unicode strings back to the files
     # but sqlite is returning unicode, test and convert
@@ -684,7 +685,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                      filename))
                  db.close()
                  return False
-
+             
              move, reason = quarantine(ds, allowed_modalities)
              if move:
                  full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
@@ -714,7 +715,6 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              t = dicom.tag.Tag((0x12, 0x64))
              ds[t] = dicom.dataelem.DataElement(t, "SQ", Sequence([method_ds]))
              
-             print ds
              if rename:
                  clean_name = os.path.join(destination_dir, ds[SOP_INSTANCE_UID].value)
              else:
@@ -759,7 +759,6 @@ def audit_get(tag, study_uid_pk=None):
     original = tag.value
     if not table_exists(table_name(tag)):
         return None
-    print "Table existed"    
     if tag.name.lower() == 'study instance uid':
         audit.execute(GET_OTHER % table_name(tag), (original,))
         results  = audit.fetchall()
