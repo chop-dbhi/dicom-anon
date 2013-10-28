@@ -56,6 +56,7 @@ IMAGE_TYPE = (0x8,0x8)
 MANUFACTURER = (0x8,0x70)
 MANUFACTURER_MODEL_NAME = (0x8,0x1090)
 
+REMOVED_TEXT = "^^Audit Trail - Removed by dicom-anon - Audit Trail^^"
 audit = None
 db = None
 
@@ -475,7 +476,7 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
     if e.tag in AUDIT.keys():
        if cleaned != None and not (e.tag == STUDY_INSTANCE_UID):
            audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
-    if cleaned != None and e.tag in ds:
+    if cleaned != None and e.tag in ds and ds[e.tag].value != None:
        ds[e.tag].value = cleaned
 
     # Tell our caller if we cleaned this element
@@ -485,24 +486,25 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
 
 def basic(ds, e, study_pk, org_root):
     cleaned = audit_get(e, study_uid_pk=study_pk)
-    if cleaned != None:
-        return cleaned
+    # pydicom does not want to write unicode strings back to the files
+    # but sqlite is returning unicode, test and convert
+    if cleaned:
+        cleaned = str(cleaned)
     if e.tag in ANNEX_E.keys():
         rule = ANNEX_E[(e.tag.group, e.tag.element)][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option
-        print "%s %s" % (rule, e.name)
         if rule == 'D':
-            cleaned = replace_vr_d(e, org_root)
+            cleaned = cleaned or replace_vr_d(e, org_root)
         if rule == 'Z':
-            cleaned = replace_vr_d(e, org_root)
+            cleaned = cleaned or replace_vr_d(e, org_root)
         if rule == 'X':
             del ds[e.tag]
-            cleaned = 'Removed by dicom-anon'
+            cleaned = cleaned or REMOVED_TEXT
         if rule == 'K':
             pass
         if rule == 'U':
-            cleaned = generate_uid(org_root)
+            cleaned = cleaned or generate_uid(org_root)
     return cleaned
-    
+
 
 def replace_vr_z(e):
     if e.VR == 'DT':
@@ -756,8 +758,8 @@ def audit_get(tag, study_uid_pk=None):
     value = None
     original = tag.value
     if not table_exists(table_name(tag)):
-        return value
-        
+        return None
+    print "Table existed"    
     if tag.name.lower() == 'study instance uid':
         audit.execute(GET_OTHER % table_name(tag), (original,))
         results  = audit.fetchall()
