@@ -61,12 +61,12 @@ audit = None
 db = None
 
 TABLE_EXISTS = 'SELECT name FROM sqlite_master WHERE name=?'
-CREATE_REGULAR_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
+CREATE_NON_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
 CREATE_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, FOREIGN KEY(study) REFERENCES studyinstanceuid(id))'
 INSERT_OTHER = 'INSERT INTO %s (original, cleaned) VALUES (?, ?)'
 INSERT_LINKED = 'INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)'
-GET_OTHER = 'SELECT cleaned FROM %s WHERE original = ?'
-GET_DATE = 'SELECT cleaned FROM %s WHERE original = ? AND study = ?'
+GET_NON_LINKED = 'SELECT cleaned FROM %s WHERE original = ?'
+GET_LINKED = 'SELECT cleaned FROM %s WHERE original = ? AND study = ?'
 STUDY_PK = 'SELECT id FROM studyinstanceuid WHERE cleaned = ?'
 NEXT_ID = 'SELECT max(id) FROM %s'
 
@@ -470,43 +470,50 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
     else:
         cleaned = basic(ds, e, study_pk, org_root)
 
-    if e.tag in AUDIT.keys():
-       if cleaned != None and not (e.tag == STUDY_INSTANCE_UID):
-           audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
     if cleaned != None and e.tag in ds and ds[e.tag].value != None:
        ds[e.tag].value = cleaned
 
     # Tell our caller if we cleaned this element
     if e.tag in ANNEX_E.keys() or white_listed:
         return True
+
     return False
 
 def basic(ds, e, study_pk, org_root):
     # Sequences are currently just removed
-    if e.VR == "SEQ":
+    # there is no audit support
+    if e.VR == "SQ":
         del ds[e.tag]
         return REMOVED_TEXT
-    cleaned = audit_get(e, study_uid_pk=study_pk)
+    cleaned = ""
+
+    prior_cleaned = audit_get(e, study_uid_pk=study_pk)
     # pydicom does not want to write unicode strings back to the files
     # but sqlite is returning unicode, test and convert
-    if cleaned:
-        cleaned = str(cleaned)
+    if prior_cleaned:
+        prior_cleaned = str(prior_cleaned)
     if e.tag in ANNEX_E.keys():
         rule = ANNEX_E[(e.tag.group, e.tag.element)][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option
         if rule == 'D':
-            cleaned = cleaned or replace_vr_d(e, org_root)
+            cleaned = prior_cleaned or replace_vr_d(e, org_root)
         if rule == 'Z':
-            cleaned = cleaned or replace_vr_d(e, org_root)
+            cleaned = prior_cleaned or replace_vr_d(e, org_root)
         if rule == 'X':
             del ds[e.tag]
-            cleaned = cleaned or REMOVED_TEXT
+            cleaned = prior_cleaned or REMOVED_TEXT
         if rule == 'K':
             pass
         if rule == 'U':
-            cleaned = cleaned or generate_uid(org_root)
+            cleaned = prior_cleaned or generate_uid(org_root)
+
+    if e.tag in AUDIT.keys():
+        if cleaned != None and prior_cleaned == None and not (e.tag == STUDY_INSTANCE_UID):
+           audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
+
     return cleaned
 
-
+# Not very clear on the difference between Z and D in the DICOM 3.15
+# standard, but leaving this is for now
 def replace_vr_z(e):
     if e.VR == 'DT':
         cleaned = CLEANED_TIME
@@ -740,7 +747,7 @@ def open_audit(identity):
     audit = db.cursor()
     if bootstrap:
         # create the table that holds the studyintance because others will refer to it
-        audit.execute(CREATE_REGULAR_TABLE % 'studyinstanceuid')
+        audit.execute(CREATE_NON_LINKED_TABLE % 'studyinstanceuid')
         db.commit()
 
 def table_exists(table):
@@ -761,13 +768,14 @@ def audit_get(tag, study_uid_pk=None):
     original = tag.value
     if not table_exists(table_name(tag)):
         return None
+
     if tag.name.lower() == 'study instance uid':
-        audit.execute(GET_OTHER % table_name(tag), (original,))
+        audit.execute(GET_NON_LINKED % table_name(tag), (original,))
         results  = audit.fetchall()
         if len(results):
             value = results[0][0]
     else:
-        audit.execute(GET_DATE % table_name(tag), (original, study_uid_pk))
+        audit.execute(GET_LINKED % table_name(tag), (original, study_uid_pk))
         results  = audit.fetchall()
         if len(results):
             value = results[0][0]
@@ -777,7 +785,7 @@ def audit_get(tag, study_uid_pk=None):
 def audit_save(tag, original, cleaned, study_uid_pk=None):
     if not table_exists(table_name(tag)):
         if tag.name.lower() == 'study instance uid':
-            audit.execute(CREATE_REGULAR_TABLE % table_name(tag))
+            audit.execute(CREATE_NON_LINKED_TABLE % table_name(tag))
         else:
             audit.execute(CREATE_LINKED_TABLE % table_name(tag))
         db.commit()
