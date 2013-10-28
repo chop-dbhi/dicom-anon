@@ -619,7 +619,9 @@ def convert_json_white_list(h):
     return value
 
 def clean_meta(ds, e):
-    if ALLOWED_FILE_META.get((e.tag.group, e.tag.element), None):
+    if e.VR == "SQ":
+        del ds[e.tag]
+    else if ALLOWED_FILE_META.get((e.tag.group, e.tag.element), None):
         return
     else:
         del ds[e.tag]
