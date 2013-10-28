@@ -461,12 +461,12 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
     cleaned = None
     if profile == 'clean':
         # If it's list in the ANNEX, we need to specifically be able to clean it
-        if (e.tag in ANNEX_E and ANNEX_E[(e.tag.group, e.tag.element)][9]=='C') or not (e.tag in ANNEX_E.keys()):
+        if (e.tag in ANNEX_E.keys() and ANNEX_E[(e.tag.group, e.tag.element)][9] == 'C') or not (e.tag in ANNEX_E.keys()):
             white_listed = white_list_handler(ds, e, white_list)
             if not white_listed:
-                cleaned = basic(ds, e, study_pk)
+                cleaned = basic(ds, e, study_pk, org_root)
         else:
-            basic(ds, e, study_pk)
+            cleaned = basic(ds, e, study_pk, org_root)
     else:
         cleaned = basic(ds, e, study_pk, org_root)
 
@@ -513,7 +513,7 @@ def replace_vr_z(e):
     elif e.VR == 'DA':
         cleaned = CLEANED_DATE
     else:
-        cleaned = ""
+        cleaned = ''
     return cleaned
 
 def replace_vr_d(e, org_root):
@@ -565,26 +565,27 @@ def curve_data_handler(ds, e):
         return True
     return False
 
-# Overlay comment is (0x60xx,0x4000) 
+# Overlay comment is (0x60xx,0x4000)
 def overlay_comment_handler(ds, e):
     if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000:
         del ds[e.tag]
         return True
     return False
 
-# Overy data is and (0x60xx,0x3000)   
+# Overlay data is and (0x60xx, 0x3000)
 def overlay_data_handler(ds, e):
     if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
         del ds[e.tag]
         return True
     return False
 
-def white_list_handler(ds, e):
+def white_list_handler(ds, e, white_list):
     if white_list.get((e.tag.group, e.tag.element), None):
         if not e.value.lower().strip() in white_list[(e.tag.group, e.tag.element)]:
             logger.info('"%s" not in white list for %s' % (e.value, e.name))
             return False
         return True
+    #logger.info('%s is not in the white list' % e.name)
     return False
 
 def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, overlay=False):
@@ -621,7 +622,7 @@ def convert_json_white_list(h):
 def clean_meta(ds, e):
     if e.VR == "SQ":
         del ds[e.tag]
-    else if ALLOWED_FILE_META.get((e.tag.group, e.tag.element), None):
+    elif ALLOWED_FILE_META.get((e.tag.group, e.tag.element), None):
         return
     else:
         del ds[e.tag]
@@ -687,7 +688,6 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                      filename))
                  db.close()
                  return False
-             
              move, reason = quarantine(ds, allowed_modalities)
              if move:
                  full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
