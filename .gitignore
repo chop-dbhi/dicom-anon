@@ -20,3 +20,5 @@ identity.db
 .coverage
 *.db
 *.json
+.coverage
+htmlcov/
