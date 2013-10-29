@@ -495,9 +495,9 @@ def basic(ds, e, study_pk, org_root):
     if e.tag in ANNEX_E.keys():
         rule = ANNEX_E[(e.tag.group, e.tag.element)][2][0] # For now we aren't going to worry about IOD type conformance, just do the first option
         if rule == 'D':
-            cleaned = prior_cleaned or replace_vr_d(e, org_root)
+            cleaned = prior_cleaned or replace_vr(e, org_root)
         if rule == 'Z':
-            cleaned = prior_cleaned or replace_vr_d(e, org_root)
+            cleaned = prior_cleaned or replace_vr(e, org_root)
         if rule == 'X':
             del ds[e.tag]
             cleaned = prior_cleaned or REMOVED_TEXT
@@ -512,18 +512,7 @@ def basic(ds, e, study_pk, org_root):
 
     return cleaned
 
-# Not very clear on the difference between Z and D in the DICOM 3.15
-# standard, but leaving this is for now
-def replace_vr_z(e):
-    if e.VR == 'DT':
-        cleaned = CLEANED_TIME
-    elif e.VR == 'DA':
-        cleaned = CLEANED_DATE
-    else:
-        cleaned = ''
-    return cleaned
-
-def replace_vr_d(e, org_root):
+def replace_vr(e, org_root):
     if e.VR == 'DT':
         cleaned = CLEANED_TIME
     elif e.VR == 'DA':

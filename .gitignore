@@ -7,6 +7,9 @@
 *.egg
 *.sock
 *.dcm
+*.zip
+*.gz
+*.tar
 dist
 sdist
 build
