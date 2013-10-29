@@ -17,5 +17,6 @@ pip-log.txt
 MANIFEST
 tags
 identity.db
+.coverage
 *.db
 *.json

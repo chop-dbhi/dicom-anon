@@ -479,6 +479,7 @@ def enforce_profile(ds, e, study_pk, profile, white_list, org_root):
 
     return False
 
+# Returning None from this function signfies that e was not altered
 def basic(ds, e, study_pk, org_root):
     # Sequences are currently just removed
     # there is no audit support
@@ -512,6 +513,7 @@ def basic(ds, e, study_pk, org_root):
 
     return cleaned
 
+# TODO this needs work, it should be smarter and cover more VRs properly
 def replace_vr(e, org_root):
     if e.VR == 'DT':
         cleaned = CLEANED_TIME
@@ -569,7 +571,6 @@ def white_list_handler(ds, e, white_list):
             logger.info('"%s" not in white list for %s' % (e.value, e.name))
             return False
         return True
-    #logger.info('%s is not in the white list' % e.name)
     return False
 
 def clean_cb(ds, e, study_pk, profile="basic", org_root=None, white_list=None, overlay=False):
