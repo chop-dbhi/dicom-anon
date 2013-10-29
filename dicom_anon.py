@@ -485,7 +485,7 @@ def basic(ds, e, study_pk, org_root):
     if e.VR == "SQ":
         del ds[e.tag]
         return REMOVED_TEXT
-    cleaned = ""
+    cleaned = None
 
     prior_cleaned = audit_get(e, study_uid_pk=study_pk)
     # pydicom does not want to write unicode strings back to the files
@@ -527,18 +527,6 @@ def replace_vr(e, org_root):
         else:
             cleaned = ''
     return cleaned
-
-def delete_handler(ds, e):
-    if e.tag in ATTRIBUTES['delete'].keys():
-        del ds[e.tag]
-        return True
-    return False
-
-def replace_handler(ds, e):
-    if e.tag in ATTRIBUTES['replace'].keys():
-       ds[e.tag].value = str(ATTRIBUTES["replace"][(e.tag.group,e.tag.element)])
-       return True
-    return False
 
 def vr_handler(ds, e):
     if e.VR in ['PN', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM']:
