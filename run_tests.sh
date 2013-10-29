@@ -1,2 +1,2 @@
 #!/bin/bash
-PYTHONPATH=PYTHONPATH:`pwd` python tests/tests.py
+PYTHONPATH=PYTHONPATH:`pwd` coverage run --include=./dicom_anon.py  tests/tests.py
