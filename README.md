@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/cbmi/dicom-anon.png?branch=master)](https://travis-ci.org/cbmi/dicom-anon) [![Coverage Status](https://coveralls.io/repos/cbmi/dicom-anon/badge.png)](https://coveralls.io/r/cbmi/dicom-anon)
 Copyright (c) 2013, The Children's Hospital of Philadelphia
 All rights reserved.
 
