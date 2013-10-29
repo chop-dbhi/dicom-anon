@@ -7,6 +7,9 @@
 *.egg
 *.sock
 *.dcm
+*.zip
+*.gz
+*.tar
 dist
 sdist
 build
@@ -14,3 +17,6 @@ pip-log.txt
 MANIFEST
 tags
 identity.db
+.coverage
+*.db
+*.json
