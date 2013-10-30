@@ -577,7 +577,7 @@ def overlay_data_handler(ds, e):
 
 def white_list_handler(ds, e, white_list):
     if white_list.get((e.tag.group, e.tag.element), None):
-        if not e.value.lower().strip() in white_list[(e.tag.group, e.tag.element)]:
+        if not re.sub(' +', ' ', e.value.lower().strip()) in white_list[(e.tag.group, e.tag.element)]:
             logger.info('"%s" not in white list for %s' % (e.value, e.name))
             return False
         return True
