@@ -30,7 +30,7 @@ This is a DICOM anonymization script. It takes a source directory of identified 
 Use this software at your own risk, no guarantees are made. Please check your results and report any issues. It is not capable of detecting burnt-in information in the pixel data or overlays. For a more complete anonymization solution it is suggested this script be used in conjunction with the [django-dicom-review](https://github.com/cbmi/django-dicom-review) and the [dicom-pipeline](https://github.com/cbmi/dicom-pipeline). The DICOM Tag Sniffer offered [here](https://wiki.cancerimagingarchive.net/display/Public/De-identification+Knowledge+Base) by the [Cancer Imaging Archive](http://www.cancerimagingarchive.net/) may be useful in verifying successful de-identification.
 
 Please note that this script will create an sqlite3 database in the working directory that it is run from that _will_ contain identified
-information (as it is the audit trail of the de-identification run). Delete the database (`identity.db` by default) if you do not wish to
+information (as it is the audit trail of the de-identification run). Delete the database (`identity.db` by default) after each run if you do not wish to
 keep this data.
 
 ## Usage
