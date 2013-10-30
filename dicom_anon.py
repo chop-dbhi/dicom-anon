@@ -365,6 +365,16 @@ ANNEX_E = {
 }
 
 # Return true if file should be quarantined
+# TODO the presence of the following attributes
+# indicates the file is a secondary capture which may 
+# be something to check for if not visually inspecting
+# images (which really needs to be done anyway)
+# (0x0018,0x1010) - Secondary Capture Device ID
+# (0x0018,0x1012) - Date of Secondary Capture 
+# (0x0018,0x1014) - Time of Secondary Capture 
+# (0x0018,0x1016) - Secondary Capture Device Manufacturer
+# (0x0018,0x1018) - Secondary Capture Device Manufacturer's Model Name
+# (0x0018,0x1019) - Secondary Capture Device Software Versions
 def quarantine(ds, allowed_modalities):
     if SERIES_DESCR in ds and ds[SERIES_DESCR].value != None:
         series_desc = ds[SERIES_DESCR].value.strip().lower()
