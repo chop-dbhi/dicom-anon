@@ -72,10 +72,10 @@ python dicom_anon.py -o 1.2.3.4.5 -r -p clean -m mr,ct,cr -a identities.db -q qu
 ```
 
 # Customization
-Currently this script is mostly stand alone, but modifying the constants at the top of the file should allow for easily changing which attributes are audited and which are cleaned. The dictionary ANNEX_E was constructed from the DICOM standard, but you can add attributes to it so that they are removed. For example, to add attribute DICOM (0xBBBB,0xFFFF) to be deleted by default, you would add this line to the dictionary:
+Currently this script is mostly stand alone, but modifying the constants at the top of the file should allow for easily changing which attributes are audited and which are cleaned. The dictionary ANNEX_E was constructed from the DICOM standard, but you can add attributes to it so that they are removed. For example, to add DICOM attribute (0xBBBB,0xFFFF) to be deleted by default, you would add this line to the dictionary:
 
 ```
 (0xBBBB,0xFFFF):['', '', 'X', '', '', '', '', '', '', '', '']
 ```
 
-The X here essentially extends the Basic Profile to delete the corresponding attribute.
+The X here essentially extends the Basic Profile to delete the corresponding attribute. 
