@@ -541,7 +541,7 @@ def replace_vr(e, org_root):
     return cleaned
 
 def vr_handler(ds, e):
-    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM']:
+    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM', 'SH']:
         del ds[e.tag]
         return True
     return False
