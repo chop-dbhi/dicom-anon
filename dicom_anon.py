@@ -362,6 +362,10 @@ ANNEX_E = {
     (0x40,0xA124):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # UID
     (0x72,0x6A):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # Selector PN Value
     (0x3006,0xA6):['N', 'N', 'X', '', '', '', '', '', '', '', ''], # ROI Interpreter
+
+
+    # This is not part of the standard, but it is a convenient place to list attributes that need to be kept
+    (0x0008,0x0016):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # SOP Class 
 }
 
 # Return true if file should be quarantined
@@ -497,7 +501,7 @@ def basic(ds, e, study_pk, org_root):
         del ds[e.tag]
         return REMOVED_TEXT
     cleaned = None
-
+    value = ds[e.tag].value
     prior_cleaned = audit_get(e, study_uid_pk=study_pk)
     # pydicom does not want to write unicode strings back to the files
     # but sqlite is returning unicode, test and convert
@@ -513,12 +517,12 @@ def basic(ds, e, study_pk, org_root):
             del ds[e.tag]
             cleaned = prior_cleaned or REMOVED_TEXT
         if rule == 'K':
-            pass
+            cleaned = value
         if rule == 'U':
             cleaned = prior_cleaned or generate_uid(org_root)
 
     if e.tag in AUDIT.keys():
-        if cleaned != None and prior_cleaned == None and not (e.tag == STUDY_INSTANCE_UID):
+        if cleaned != None and cleaned != value and prior_cleaned == None and not (e.tag == STUDY_INSTANCE_UID):
            audit_save(e, e.value, cleaned, study_uid_pk=study_pk)
 
     return cleaned
@@ -569,6 +573,7 @@ def overlay_comment_handler(ds, e):
     return False
 
 # Overlay data is and (0x60xx, 0x3000)
+# but we are removing everything related to it.
 def overlay_data_handler(ds, e):
     if ((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
         del ds[e.tag]
