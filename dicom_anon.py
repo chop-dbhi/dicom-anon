@@ -573,7 +573,6 @@ def overlay_comment_handler(ds, e):
     return False
 
 # Overlay data is and (0x60xx, 0x3000)
-# but we are removing everything related to it.
 def overlay_data_handler(ds, e):
     if ((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
         del ds[e.tag]
