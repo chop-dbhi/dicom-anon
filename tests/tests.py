@@ -12,7 +12,7 @@ class TestDICOMAnon(unittest.TestCase):
         ds = dicom.read_file("tests/samples/test_wrist_cr1.dcm")
         self.assertEqual(ds.PatientName, "Identified Patient")
         dicom_anon.driver("tests/samples", "tests/clean", quarantine_dir="quarantine", audit_file="identity.db",
-            allowed_modalities=["cr"], org_root="1.2.826.0.1.3680043.8.1008",
+            allowed_modalities=["cr", "mr", "pr"], org_root="1.2.826.0.1.3680043.8.1008",
             white_list_file="white_list.json", log_file=None, rename=False,profile="basic", overlay=False)
         ds = dicom.read_file("tests/clean/test_wrist_cr1.dcm")
         self.assertEqual(ds.PatientName,  "Patient's Name 1")
@@ -24,7 +24,7 @@ class TestDICOMAnon(unittest.TestCase):
         ds = dicom.read_file("tests/samples/test_wrist_cr1.dcm")
         self.assertEqual(ds.PatientName, "Identified Patient")
         dicom_anon.driver("tests/samples", "tests/clean", quarantine_dir="quarantine", audit_file="identity.db",
-            allowed_modalities=["cr"], org_root="1.2.826.0.1.3680043.8.1008",
+            allowed_modalities=["cr","mr","pr"], org_root="1.2.826.0.1.3680043.8.1008",
             white_list_file="white_list.json", log_file=None, rename=False,profile="clean", overlay=False)
         ds = dicom.read_file("tests/clean/test_wrist_cr1.dcm")
         self.assertEqual(ds.PatientName,"Patient's Name 1")

@@ -414,7 +414,7 @@ def quarantine(ds, allowed_modalities):
 
     if MANUFACTURER_MODEL_NAME in ds:
         model_name = ds[MANUFACTURER_MODEL_NAME].value.strip().lower()
-        if "the DiCOM box" in model_name:
+        if "the dicom box" in model_name:
             return(True, "Manufacturer model name is suspect")     
     return (False, '')
 
