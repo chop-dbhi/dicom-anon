@@ -556,21 +556,21 @@ def personal_handler(ds,e):
 
 # Curve data is (0x50xx,0xxxxx)
 def curve_data_handler(ds, e):
-    if hex((e.tag.group)/0xFF) == 0x50:
+    if ((e.tag.group)/0xFF) == 0x50:
         del ds[e.tag]
         return True
     return False
 
 # Overlay comment is (0x60xx,0x4000)
 def overlay_comment_handler(ds, e):
-    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000:
+    if ((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x4000:
         del ds[e.tag]
         return True
     return False
 
 # Overlay data is and (0x60xx, 0x3000)
 def overlay_data_handler(ds, e):
-    if hex((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
+    if ((e.tag.group)/0xFF) == 0x60 and e.tag.element == 0x3000:
         del ds[e.tag]
         return True
     return False
