@@ -643,6 +643,16 @@ def anonymize(ds, white_list, org_root, profile, overlay):
     ds.file_meta.walk(clean_meta)
     return ds
 
+
+def quarantine_file(root, filename, quarantine_dir, ident_dir, reason):
+    full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
+    if not os.path.exists(full_quarantine_dir):
+          os.makedirs(full_quarantine_dir)
+    quarantine_name = os.path.join(full_quarantine_dir, filename)
+    logger.info('"%s" will be moved to quarantine directory due to: %s' % (os.path.join(root, filename), reason))
+    shutil.copyfile(os.path.join(root, filename), quarantine_name)
+
+
 def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identity.db', allowed_modalities=['mr','ct'], 
         org_root='5.555.5', white_list_file = None, log_file=None, rename=False, profile="basic", overlay = False):
     
@@ -683,25 +693,27 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                      filename))
                  db.close()
                  return False
+             except Exception:
+                 # Likely DICOM formatting error
+                 quarantine_file(root, filename, quarantine_dir, ident_dir,
+                         "Could not read DICOM file, possible formatting issue.")
+                 continue
+
              move, reason = quarantine(ds, allowed_modalities)
+
              if move:
-                 full_quarantine_dir = destination(os.path.join(root, filename), quarantine_dir, ident_dir)
-                 if not os.path.exists(full_quarantine_dir):
-                       os.makedirs(full_quarantine_dir)
-                 quarantine_name = os.path.join(full_quarantine_dir, filename)
-                 logger.info('"%s" will be moved to quarantine directory due to: %s' % (os.path.join(root, filename), reason))
-                 shutil.copyfile(os.path.join(root, filename), quarantine_name)
+                 quarantine_file(root, filename, quarantine_dir, ident_dir, reason)
                  continue
 
              destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
              ds = anonymize(ds, white_list, org_root, profile, overlay)
-             
+
              # Set Patient Identity Removed to YES
              t = dicom.tag.Tag((0x12,0x62))
              ds[t] = dicom.dataelem.DataElement(t,"CS","YES")
-             
+
              # Set the De-identification method code sequene
              method_ds = Dataset()
              t = dicom.tag.Tag((0x8, 0x102))
@@ -711,7 +723,7 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                  method_ds[t] = dicom.dataelem.DataElement(t, "DS", dicom.multival.MultiValue(dicom.valuerep.DS, ["113100"]))
              t = dicom.tag.Tag((0x12, 0x64))
              ds[t] = dicom.dataelem.DataElement(t, "SQ", Sequence([method_ds]))
-             
+
              if rename:
                  clean_name = os.path.join(destination_dir, ds[SOP_INSTANCE_UID].value)
              else:
