@@ -56,7 +56,7 @@ There are a number of options that can be explored using the --help tag.
         ]
     }
      ```
-    DICOM attribute 0x8,0x1030 (Study Description) is allowed to be "CT CHEST W/CONTRAST" or "NECK STUDY". All other values will be removed. Case does not matter. Beginning and ending spaces will be stripped and consecutive spaces collapsed.
+    DICOM attribute 0x8,0x1030 (Study Description) is allowed to be "CT CHEST W/CONTRAST" or "NECK STUDY". All other values will be removed. Case does not matter. Beginning and ending spaces will be stripped and consecutive spaces collapsed. Commas, dashes, underscores and periods will also be ignored for sake of comparison.
 
 1. Quarantine - Files that are explicitly marked as containing burnt-in data along with files that have a series description of "Patient Protocol" will be copied to a quarantine directory (they are not deleted from the source directory). There are a few other conditions that will result in quarantine as well. The directory can be changed on the command line, but defaults to `quarantine` in the current working directory. Files that do not match the allowed modalities (see next item) will also be copied to quarantine. Suggestions for further heuristics are welcome.
 1. Restrict modality. By default only MR and CT will be allowed. This can be changed using the command line.
