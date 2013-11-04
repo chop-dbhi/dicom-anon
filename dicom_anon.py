@@ -419,7 +419,7 @@ def quarantine(ds, allowed_modalities):
     if MANUFACTURER_MODEL_NAME in ds:
         model_name = ds[MANUFACTURER_MODEL_NAME].value.strip().lower()
         if "the dicom box" in model_name:
-            return(True, "Manufacturer model name is suspect")     
+            return(True, "Manufacturer model name is suspect")
     return (False, '')
 
 # Determines destination of cleaned/quarantined file based on 
@@ -581,7 +581,7 @@ def overlay_data_handler(ds, e):
 
 def white_list_handler(ds, e, white_list):
     if white_list.get((e.tag.group, e.tag.element), None):
-        if not re.sub(' +', ' ', e.value.lower().strip()) in white_list[(e.tag.group, e.tag.element)]:
+        if not re.sub(' +', ' ', re.sub('[-_,.]', '', e.value.lower().strip())) in white_list[(e.tag.group, e.tag.element)]:
             logger.info('"%s" not in white list for %s' % (e.value, e.name))
             return False
         return True
@@ -615,7 +615,7 @@ def convert_json_white_list(h):
     for tag in h.keys():
         a, b = tag.split(',')
         t = (int(a,16), int(b,16))
-        value[t]=[re.sub(' +', ' ', x.lower().strip()) for x in h[tag]]
+        value[t]=[re.sub(' +', ' ', re.sub('[-_,.]','', x.lower().strip())) for x in h[tag]]
     return value
 
 def clean_meta(ds, e):
