@@ -478,6 +478,8 @@ Topic Title	(0088,0904)
 Y	N	X									
 Transaction UID	(0008,1195)
 N	N	U		K							
+UID	(0040,A124)
+N	Y	U									
 Verifying Observer Identification Code Sequence	(0040,A088)
 N	Y	Z									
 Verifying Observer Name	(0040,A075)

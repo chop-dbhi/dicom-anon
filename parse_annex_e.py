@@ -17,6 +17,7 @@ item = None
 
 print("{")
 for index, line in enumerate(input_file):
+    line = line.strip(" \n")
     if (index % 2) == 0:
         # Attribute name line
         line = line.split("\t")
@@ -24,7 +25,7 @@ for index, line in enumerate(input_file):
         item = "0x%s" % line[1].split(",")[1].strip()[:-1]
         attribute_name = line[0].strip()
     else:
-        print("\t(%s,%s): %s, # %s" % (group, item, line.split("\t")[:-1], attribute_name))
+        print("\t(%s,%s): %s, # %s" % (group, item, line.split("\t"), attribute_name))
 print("}")
 
 
