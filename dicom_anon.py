@@ -683,6 +683,9 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
             white_list = convert_json_white_list(white_list)
         except IOError, e:
             logger.error('Error opening white list file.')
+            if log_file:
+                h.flush()
+                h.close()
             return False
 
     open_audit(audit_file) 
@@ -697,6 +700,9 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                  logger.error('Error reading file %s' % os.path.join(root,
                      filename))
                  db.close()
+                 if log_file:
+                    h.flush()
+                    h.close()
                  return False
              except Exception:
                  # Likely DICOM formatting error
@@ -738,8 +744,15 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              except IOError:
                  logger.error('Error writing file "%s"' % clean_name)
                  db.close()
+                 if log_file:
+                     h.flush()
+                     h.close()
                  return False
     db.close()
+    if log_file:
+        h.flush()
+        h.close()
+
     return True
 
 # SQLite audit trail functions
