@@ -16,6 +16,7 @@ class TestDICOMAnon(unittest.TestCase):
             white_list_file="white_list.json", log_file=None, rename=False,profile="basic", overlay=False)
         ds = dicom.read_file("tests/clean/test_wrist_cr1.dcm")
         self.assertEqual(ds.PatientName,  "Patient's Name 1")
+        self.assertEqual(ds.StudyID, "CLEANED")
         # Not using clean descriptions, so study and series description should be gone
         self.assertFalse(dicom_anon.SERIES_DESCR in ds)
         self.assertFalse(dicom_anon.STUDY_DESCR in ds)

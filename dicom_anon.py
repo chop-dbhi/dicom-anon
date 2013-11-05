@@ -539,10 +539,10 @@ def replace_vr(e, org_root):
     elif e.VR == 'UI':
         cleaned = generate_uid(org_root)
     else:
-        if e.name and len(e.name):
+        if e.tag in AUDIT.keys() and e.name and len(e.name):
             cleaned = ('%s %d' % (e.name, get_next_pk(e))).encode('ascii')
         else:
-            cleaned = ''
+            cleaned = 'CLEANED'
     return cleaned
 
 def vr_handler(ds, e):
