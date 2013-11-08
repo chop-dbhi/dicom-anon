@@ -78,4 +78,5 @@ Currently this script is mostly stand alone, but modifying the constants at the 
 (0xBBBB,0xFFFF):['', '', 'X', '', '', '', '', '', '', '', '']
 ```
 
-The X here essentially extends the Basic Profile to delete the corresponding attribute. 
+The X here essentially extends the Basic Profile to delete the corresponding attribute. If instead of deletion, you wanted to ensure an attribute was kept, place a 'K' in the third column.
+
