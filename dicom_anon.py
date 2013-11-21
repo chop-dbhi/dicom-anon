@@ -784,7 +784,12 @@ def audit_get_study_pk(cleaned):
 
 def audit_get(tag, study_uid_pk=None):
     value = None
-    original = tag.value
+    if tag.VM > 1:
+        original = [str(val) for val in tag.value]
+        original = '/'.join(original)
+    else:
+        original = tag.value
+
     if not table_exists(table_name(tag)):
         return None
 
@@ -808,6 +813,12 @@ def audit_save(tag, original, cleaned, study_uid_pk=None):
         else:
             audit.execute(CREATE_LINKED_TABLE % table_name(tag))
         db.commit()
+
+    if tag.VM > 1:
+        original = [str(val) for val in tag.value]
+        original = '/'.join(original)
+    else:
+        original = tag.value
 
     # Table exists
     if tag.name.lower() == 'study instance uid':
