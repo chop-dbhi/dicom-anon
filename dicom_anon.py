@@ -367,6 +367,7 @@ ANNEX_E = {
 
     # This is not part of the standard, but it is a convenient place to list attributes that need to be kept
     (0x0008,0x0016):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # SOP Class 
+    (0x0008,0x0008):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Image Type
     MODALITY:['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Modality
 }
 
