@@ -549,7 +549,7 @@ def replace_vr(e, org_root):
     return cleaned
 
 def vr_handler(ds, e):
-    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM', 'SH', 'AS', 'OB', 'OW'] and e.tag != PIXEL_DATA):
+    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM', 'SH', 'AS', 'OB', 'OW'] and e.tag != PIXEL_DATA:
         del ds[e.tag]
         return True
     return False
