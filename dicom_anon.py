@@ -55,6 +55,7 @@ MODALITY = (0x8,0x60)
 IMAGE_TYPE = (0x8,0x8)
 MANUFACTURER = (0x8,0x70)
 MANUFACTURER_MODEL_NAME = (0x8,0x1090)
+PIXEL_DATA = (0x7fe0, 0x10)
 
 REMOVED_TEXT = "^^Audit Trail - Removed by dicom-anon - Audit Trail^^"
 audit = None
@@ -548,7 +549,7 @@ def replace_vr(e, org_root):
     return cleaned
 
 def vr_handler(ds, e):
-    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM', 'SH', 'AS', 'OB', 'OW']:
+    if e.VR in ['PN', 'CS', 'UI', 'DA', 'DT', 'LT', 'UN', 'UT', 'ST', 'AE', 'LO', 'TM', 'SH', 'AS', 'OB', 'OW'] and e.tag != PIXEL_DATA):
         del ds[e.tag]
         return True
     return False
