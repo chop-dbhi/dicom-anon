@@ -56,6 +56,7 @@ IMAGE_TYPE = (0x8,0x8)
 MANUFACTURER = (0x8,0x70)
 MANUFACTURER_MODEL_NAME = (0x8,0x1090)
 PIXEL_DATA = (0x7fe0, 0x10)
+PHOTOMETRIC_INTERPRETATION = (0x28, 0x4)
 
 REMOVED_TEXT = "^^Audit Trail - Removed by dicom-anon - Audit Trail^^"
 audit = None
@@ -370,6 +371,8 @@ ANNEX_E = {
     (0x0008,0x0016):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # SOP Class 
     (0x0008,0x0008):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Image Type
     MODALITY:['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Modality
+    PIXEL_DATA: ['N', 'N', 'K', '', '', '', '', '', '', '', ''],
+    PHOTOMETRIC_INTERPRETATION: ['N', 'N', 'K', '', '', '', '', '', '', '', ''], 
 }
 
 # Return true if file should be quarantined
