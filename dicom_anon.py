@@ -107,7 +107,26 @@ AUDIT = {
     (0x10,0x1005):1, # Patient's Birth Name
     (0x10,0x20):1, # Patient's ID
 }
-
+# This table is derived directly from Annex E of Part 15 of the DICOM Standard
+# The dictionnary is derived from a table in the standard. Each column is represented by 
+# a string in the array at each key. See page 65 of the standard for a full description 
+# of what each column means, but the ones this script uses are:
+# Column 3 - Basic Profile
+# Column 11 - Clean Description Option
+# Each column contains a letter describing what action must be taken
+# The letter represents an opton specified on page 62 of the standard. 
+# X means the attribute must be removed
+# U means the attriabute must be replaced with a cleaned but internally consistent UUID
+# D meana replace with a non-zero length dummy value
+# Z means replace with a zero or non-zero length dummy value
+# C means the attribute can be kept if it is cleaned
+# See the specification for more specific
+# In general we look at the value in column 3 and perform the specified action, but if the "clean" option is enabled
+# we will check column 10 to see if contains a 'C'. If it does, and we have a white-list specified for that attribute,
+# we will keep the value if it is in the white-list
+#
+# We also make a couple of additions to the table from the standard for convenience, this is clearly marked
+# in the code below
 ANNEX_E = {
     (0x0008,0x0050): ['N', 'Y', 'Z', '', '', '', '', '', '', '', '', ''], # Accession Number
     (0x0018,0x4000): ['Y', 'N', 'X', '', '', '', '', '', '', 'C', '', ''], # Acquisition Comments
