@@ -108,7 +108,7 @@ AUDIT = {
     (0x10,0x20):1, # Patient's ID
 }
 # This table is derived directly from Annex E of Part 15 of the DICOM Standard
-# The dictionnary is derived from a table in the standard. Each column is represented by 
+# The dictionary is derived from a table in the standard. Each column is represented by 
 # a string in the array at each key. See page 65 of the standard for a full description 
 # of what each column means, but the ones this script uses are:
 # Column 3 - Basic Profile
