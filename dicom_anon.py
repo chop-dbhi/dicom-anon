@@ -113,14 +113,16 @@ AUDIT = {
 # of what each column means, but the ones this script uses are:
 # Column 3 - Basic Profile
 # Column 11 - Clean Description Option
-# Each column contains a letter describing what action must be taken
-# The letter represents an opton specified on page 62 of the standard. 
+# Each column contains a letter describing what action is permissible for that attribute in the profile
+# specified by the column.
+# Each letter represents an option specified on page 62 of the standard. 
+# Briefly:
 # X means the attribute must be removed
 # U means the attriabute must be replaced with a cleaned but internally consistent UUID
 # D meana replace with a non-zero length dummy value
 # Z means replace with a zero or non-zero length dummy value
 # C means the attribute can be kept if it is cleaned
-# See the specification for more specific
+# See the specification for more specific information.
 # In general we look at the value in column 3 and perform the specified action, but if the "clean" option is enabled
 # we will check column 10 to see if contains a 'C'. If it does, and we have a white-list specified for that attribute,
 # we will keep the value if it is in the white-list
