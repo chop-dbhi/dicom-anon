@@ -392,8 +392,19 @@ ANNEX_E = {
     (0x0008,0x0016):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # SOP Class 
     (0x0008,0x0008):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Image Type
     MODALITY:['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Modality
-    PIXEL_DATA: ['N', 'N', 'K', '', '', '', '', '', '', '', ''],
-    PHOTOMETRIC_INTERPRETATION: ['N', 'N', 'K', '', '', '', '', '', '', '', ''], 
+    PIXEL_DATA:['N', 'N', 'K', '', '', '', '', '', '', '', ''],
+    PHOTOMETRIC_INTERPRETATION:['N', 'N', 'K', '', '', '', '', '', '', '', ''], 
+    (0x28,0x1100):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Gray Lookup Table Descriptor 
+    (0x28,0x1101):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Red Palette Color Lookup Table Descriptor
+    (0x28,0x1102):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Green Palette Color Lookup Table Descriptor
+    (0x28,0x1103):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Blue Palette Color Lookup Table Descriptor
+    (0x28,0x1104):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Alpha Palette Color Lookup Table Descriptor
+    (0x28,0x1200):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Gray Lookup Table Data
+    (0x28,0x1201):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Red Palette Color Lookup Table Data
+    (0x28,0x1202):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Green Palette Color Lookup Table Data
+    (0x28,0x1203):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Blue Palette Color Lookup Table Data
+    (0x28,0x1204):['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Alpha Palette Color Lookup Table Data
+    (0x28,0x2): ['N', 'N', 'K', '', '', '', '', '', '', '', ''], # Samples Per Pixel 
 }
 
 # Return true if file should be quarantined
