@@ -757,7 +757,12 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
              destination_dir = destination(os.path.join(root, filename), clean_dir, ident_dir)
              if not os.path.exists(destination_dir):
                  os.makedirs(destination_dir)
-             ds = anonymize(ds, white_list, org_root, profile, overlay)
+             try:
+                 ds = anonymize(ds, white_list, org_root, profile, overlay)
+             except ValueError:
+                 quarantine_file(root, filename, quarantine_dir, ident_dir,
+                         "Error running anonymize function, may be a problem with the dicom tags.")
+                 continue
 
              # Set Patient Identity Removed to YES
              t = dicom.tag.Tag((0x12,0x62))
