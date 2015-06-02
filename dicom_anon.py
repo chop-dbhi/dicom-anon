@@ -759,9 +759,10 @@ def driver(ident_dir, clean_dir, quarantine_dir='quarantine', audit_file='identi
                  os.makedirs(destination_dir)
              try:
                  ds = anonymize(ds, white_list, org_root, profile, overlay)
-             except ValueError:
+             except ValueError, e:
                  quarantine_file(root, filename, quarantine_dir, ident_dir,
-                         "Error running anonymize function, may be a problem with the dicom tags.")
+                    "Error running anonymize function. There may be a DICOM element value that does not match "
+                    "the specified Value Representation (VR). Error was: %s" % e)
                  continue
 
              # Set Patient Identity Removed to YES
