@@ -116,11 +116,10 @@ class Audit(object):
 
     def __init__(self, filename):
         self.db = sqlite3.connect(filename)
-        self.cursor = self.db.cursor()
         if not os.path.isfile(filename):
-            # create the table that holds the studyintance because others will refer to it
-            self.cursor.execute(CREATE_NON_LINKED_TABLE % 'studyinstanceuid')
-            self.db.commit()
+            with self.db as db:
+                # create the table that holds the studyintance because others will refer to it
+                db.execute(CREATE_NON_LINKED_TABLE % 'studyinstanceuid')
 
     @staticmethod
     def tag_to_table(tag):
@@ -182,17 +181,18 @@ class Audit(object):
             original = '/'.join(original)
         else:
             original = tag.value
-        self.cursor.execute(UPDATE_LINKED % table_name, (cleaned, original, study_uid_pk))
-        self.db.commit()
+        with self.db as db:
+            db.execute(UPDATE_LINKED % table_name, (cleaned, original, study_uid_pk))
+
 
     def save(self, tag, cleaned, study_uid_pk=None):
         table_name = self.tag_to_table(tag)
         if not self.table_exists(table_name):
-            if tag.name.lower() == 'study instance uid':
-                self.cursor.execute(CREATE_NON_LINKED_TABLE % table_name)
-            else:
-                self.cursor.execute(CREATE_LINKED_TABLE % table_name)
-            self.db.commit()
+            with self.db as db:
+                if tag.name.lower() == 'study instance uid':
+                    db.execute(CREATE_NON_LINKED_TABLE % table_name)
+                else:
+                    db.execute(CREATE_LINKED_TABLE % table_name)
 
         if tag.VM > 1:
             original = [str(val) for val in tag.value]
@@ -201,11 +201,12 @@ class Audit(object):
             original = tag.value
 
         # Table exists
-        if tag.name.lower() == 'study instance uid':
-            self.cursor.execute(INSERT_OTHER % table_name, (original, cleaned))
-        else:
-            self.cursor.execute(INSERT_LINKED % table_name, (original, cleaned, study_uid_pk))
-        self.db.commit()
+        with self.db as db:
+            if tag.name.lower() == 'study instance uid':
+                db.execute(INSERT_OTHER % table_name, (original, cleaned))
+            else:
+                db.execute(INSERT_LINKED % table_name, (original, cleaned, study_uid_pk))
+
 
 
 class DicomAnon(object):
