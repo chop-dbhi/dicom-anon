@@ -620,7 +620,7 @@ class DicomAnon(object):
                 t = Tag((0x12, 0x62))
                 ds[t] = DataElement(t, 'CS', 'YES')
 
-                # Set the De-identification method code sequene
+                # Set the De-identification method code sequence
                 method_ds = Dataset()
                 t = dicom.tag.Tag((0x8, 0x102))
                 if self.profile == 'clean':
