@@ -116,6 +116,7 @@ class Audit(object):
 
     def __init__(self, filename):
         self.db = sqlite3.connect(filename)
+        self.cursor = self.db.cursor()
         if not os.path.isfile(filename):
             with self.db as db:
                 # create the table that holds the studyintance because others will refer to it
