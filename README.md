@@ -72,4 +72,6 @@ python dicom_anon.py -o 1.2.3.4.5 -r -p clean -m mr,ct,cr -a identities.db -q qu
 ```
 
 # Customization
-To customize how specific fields are anonymized, supply a different spec file using --spec_file option to the script. The default spec file, `annexe_ext.dat` is a slight modification of the recommendations in ANNEX E of the DICOM standard. The `annexe.dat` file contains the recommendations from ANNEX E if you prefer to use that. 
+To customize how specific fields are anonymized, supply a different spec file using --spec_file option to the script. The default spec file, `annexe_ext.dat` is a slight modification of the recommendations in [ANNEX E](ftp://medical.nema.org/medical/dicom/2011/11_15pu.pdf) of the DICOM standard. The `annexe.dat` file contains the recommendations from [ANNEX E](ftp://medical.nema.org/medical/dicom/2011/11_15pu.pdf) if you prefer to use that. The tab separated columns in the spec file correspond to the columns in the table of the [ANNEX E](ftp://medical.nema.org/medical/dicom/2011/11_15pu.pdf) document starting on page 65.
+
+The columns in t
