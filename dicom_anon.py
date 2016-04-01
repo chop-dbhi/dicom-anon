@@ -228,7 +228,8 @@ class DicomAnon(object):
 
         if self.white_list_file is not None:
             try:
-                self.white_list = self.convert_json_white_list(json.load(open(self.white_list_file, 'r')))
+                with open(self.white_list_file, 'r')) as white_list_handle:
+                    self.white_list = self.convert_json_white_list(json.load(white_list_handle))
             except IOError:
                 raise Exception('Error opening white list file.')
 
