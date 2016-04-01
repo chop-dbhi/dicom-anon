@@ -371,8 +371,9 @@ class DicomAnon(object):
         return False, ''
 
     def generate_uid(self):
-        n = datetime.now()
+
         while True:
+            n = datetime.now()
             new_guid = '%s.%s.%s.%s.%s.%s.%s' % (self.org_root, n.year, n.month, n.day,
                                                  n.minute, n.second, n.microsecond)
             if new_guid != self.current_uid:
