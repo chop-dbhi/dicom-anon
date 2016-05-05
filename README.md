@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/chop-dbhi/dicom-anon.png?branch=master)](https://travis-ci.org/chop-dbhi/dicom-anon) [![Coverage Status](https://coveralls.io/repos/cbmi/dicom-anon/badge.png?branch=master)](https://coveralls.io/r/cbmi/dicom-anon?branch=master)
 
-Copyright (c) 2013, The Children's Hospital of Philadelphia
+Copyright (c) 2016, The Children's Hospital of Philadelphia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
