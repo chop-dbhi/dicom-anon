@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2013, The Children's Hospital of Philadelphia
+# Copyright (c) 2017, The Children's Hospital of Philadelphia
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -87,7 +87,7 @@ AUDIT = {
     SERIES_INSTANCE_UID: 1,
     SOP_INSTANCE_UID: 1,
     (0x8, 0x20): 1,  # Study Date
-    (0x8, 0x50): 1,  # Accession Number - Z BALC
+    (0x8, 0x50): 1,  # Accession Number
     (0x8, 0x80): 1,  # Institution name
     (0x8, 0x81): 1,  # Institution Address
     (0x8, 0x90): 1,  # Referring Physician's name
@@ -401,7 +401,7 @@ class DicomAnon(object):
         white_listed = False
         cleaned = None
         if self.profile == 'clean':
-            # If it's list in the ANNEX, we need to specifically be able to clean it
+            # If it's in the ANNEX, we need to specifically be able to clean it
             if (e.tag in self.spec.keys() and self.spec[(e.tag.group, e.tag.element)][9] == 'C') \
                     or not (e.tag in self.spec.keys()):
                 white_listed = self.white_list_handler(e)
@@ -421,7 +421,7 @@ class DicomAnon(object):
 
         return False
 
-    # Returning None from this function signfies that e was not altered
+    # Returning None from this function signifies that e was not altered
     def basic(self, ds, e, study_pk):
         # Sequences are currently just removed
         # there is no audit support
