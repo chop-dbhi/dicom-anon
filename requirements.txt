@@ -4,4 +4,4 @@
 #
 #     pip install -U -r requirements.txt
 
-pydicom
+dicom==0.9.9.post1
