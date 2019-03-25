@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/chop-dbhi/dicom-anon.png?branch=master)](https://travis-ci.org/chop-dbhi/dicom-anon) [![Coverage Status](https://coveralls.io/repos/cbmi/dicom-anon/badge.png?branch=master)](https://coveralls.io/r/cbmi/dicom-anon?branch=master)
 
-Copyright (c) 2016, The Children's Hospital of Philadelphia
+Copyright (c) 2019, The Children's Hospital of Philadelphia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -32,6 +32,11 @@ Use this software at your own risk, no guarantees are made. Please check your re
 Please note that this script will create an sqlite3 database in the working directory that it is run from that _will_ contain identified
 information (as it is the audit trail of the de-identification run). Delete the database (`identity.db` by default) after each run if you do not wish to
 keep this data.
+
+## Dependencies
+
+* This package only runs under Python 2.7, **it does not work under Python 3**.
+* This package requires a specific, older version of the pydicom package. See the requirements.txt for details.
 
 ## Usage
     python dicom_anon.py <source_directory> <target_directory>

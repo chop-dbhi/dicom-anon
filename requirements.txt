@@ -1,3 +1,4 @@
+# This package only runs under Python 2.7. It is not compatible with Python 3.
 # This file collects all required third-party applications that are needed
 # to run this project. Later you can install all these apps in a row
 # using pip. Example::

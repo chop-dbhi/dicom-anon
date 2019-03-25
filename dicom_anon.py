@@ -600,7 +600,7 @@ class DicomAnon(object):
                     os.makedirs(destination_dir)
                 try:
                     ds, study_pk = self.anonymize(ds)
-                except ValueError, e:
+                except ValueError as e:
                     self.quarantine_file(source_path, ident_dir, 'Error running anonymize function. There may be a '
                                                                  'DICOM element value that does not match the specified'
                                                                  ' Value Representation (VR). Error was: %s' % e)
