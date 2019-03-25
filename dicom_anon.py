@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2017, The Children's Hospital of Philadelphia
+# Copyright (c) 2019, The Children's Hospital of Philadelphia
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the

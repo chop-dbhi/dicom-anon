@@ -3,6 +3,6 @@
 # to run this project. Later you can install all these apps in a row
 # using pip. Example::
 #
-#     pip install -U -r requirements.txt
+#     pip2 install -U -r requirements.txt
 
 dicom==0.9.9.post1
