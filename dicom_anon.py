@@ -36,10 +36,12 @@ import sqlite3
 import shutil
 from functools import partial
 import argparse
+import time
 
+# standard SQL commands:
 TABLE_EXISTS = 'SELECT name FROM sqlite_master WHERE name=?'
-CREATE_NON_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
-CREATE_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, ' \
+CREATE_NON_LINKED_TABLE = 'CREATE TABLE if not exists %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
+CREATE_LINKED_TABLE = 'CREATE TABLE if not exists %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, ' \
                       'FOREIGN KEY(study) REFERENCES studyinstanceuid(id))'
 INSERT_OTHER = 'INSERT INTO %s (original, cleaned) VALUES (?, ?)'
 INSERT_LINKED = 'INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)'
@@ -48,6 +50,10 @@ GET_LINKED = 'SELECT cleaned FROM %s WHERE original = ? AND study = ?'
 UPDATE_LINKED = 'UPDATE %s SET cleaned = ? WHERE cleaned = ? AND study = ?'
 STUDY_PK = 'SELECT id FROM studyinstanceuid WHERE cleaned = ?'
 NEXT_ID = 'SELECT max(id) FROM %s'
+#### WARNING: PARTICULARLY DESTRUCTIVE SQL COMMANDS (for --DB_delete): ####
+PRE_DB_DELETE_PRAGMA_SET = 'PRAGMA writable_schema = 1'
+DB_DELETE = 'DELETE FROM sqlite_master where type in (\'table\', \'index\', \'trigger\')'
+POST_DB_DELETE_PRAGMA_RESET = 'PRAGMA writable_schema = 0;'
 
 MEDIA_STORAGE_SOP_INSTANCE_UID = (0x2, 0x3)
 STUDY_INSTANCE_UID = (0x20, 0xD)
@@ -119,8 +125,20 @@ class Audit(object):
         self.cursor = self.db.cursor()
         if not os.path.isfile(filename):
             with self.db as db:
-                # create the table that holds the studyintance because others will refer to it
-                db.execute(CREATE_NON_LINKED_TABLE % 'studyinstanceuid')
+                # create the table that holds the studyinstance because others will refer to it
+                table_name = 'studyinstanceuid'
+                db.execute(CREATE_NON_LINKED_TABLE % table_name)
+
+    def DB_delete(self):
+        # NOTE: DB_delete() can be useful when switching from a Python 2 environment to a Python 3 environment,
+        # to clear out the previously generated (e.g., Python 2) strings.
+        with self.db as db:
+            # delete all existing tables in this DB:
+            db.execute(PRE_DB_DELETE_PRAGMA_SET)
+            db.execute(DB_DELETE)
+            db.execute(POST_DB_DELETE_PRAGMA_RESET)
+            # and a 1-second safety pause to briefly allow things to settle:
+            time.sleep(1)
 
     @staticmethod
     def tag_to_table(tag):
@@ -227,6 +245,7 @@ class DicomAnon(object):
         self.keep_private_tags = kwargs.get('keep_private_tags', False)
         self.keep_csa_headers = kwargs.get('keep_csa_headers', False)
         self.relative_dates = kwargs.get('relative_dates', None)
+        self.DB_delete = kwargs.get('DB_delete', False)
 
         if self.white_list_file is not None:
             try:
@@ -238,6 +257,10 @@ class DicomAnon(object):
         self.spec = self.parse_spec_file(self.spec_file)
 
         self.audit = Audit(self.audit_file)
+
+        if self.DB_delete:
+            logger.warning('WARNING: dicom_anon called with --DB_delete==%s; resetting all cleaned counters.' % self.DB_delete)
+            self.audit.DB_delete()
 
         self.current_uid = None
 
@@ -655,6 +678,9 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--audit_file', type=str, default='identity.db', help='Name of sqlite audit file')
     parser.add_argument('-m', '--modalities', type=str, nargs='+', default=['mr', 'ct'],
                         help='Comma separated list of allowed modalities. Defaults to mr,ct')
+    parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
+                            help='Delete sqlite3 DB tables of previously generated clean values ;'
+                                'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
     parser.add_argument('-o', '--org_root', type=str, default='5.555.5', help='Your organizations DICOM org root')
     parser.add_argument('-l', '--log_file', type=str, default=None,
                         help='Name of file to log messages to. Defaults to console')
