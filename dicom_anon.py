@@ -246,6 +246,7 @@ class DicomAnon(object):
         self.modalities = [string.lower() for string in kwargs.get('modalities', DEFAULT_MODALITIES)[0].split(',')]
         self.exclude_series_descs = [string.strip().lower() for string in kwargs.get('exclude_series_descs', DEFAULT_EXCLUDE_SERIES_DESCS)[0].split(',')]
         self.force_replacement_str = kwargs.get('force_replace', DEFAULT_FORCE_REPLACEMENT_REDACTED_STR)
+        self.do_not_clean = kwargs.get('do_not_clean', False)
         self.org_root = kwargs.get('org_root', '5.555.5')
         self.rename = kwargs.get('rename', False)
         self.keep_overlay = kwargs.get('keep_overlay', False)
@@ -477,7 +478,7 @@ class DicomAnon(object):
             if rule == 'R':
                 # NOTE: When so specified, the 'R' ("REPLACE") rule shall supercede all other rules:
                 cleaned = self.force_replacement_str
-            else:
+            elif not self.do_not_clean:
                 if rule == 'D':
                     cleaned = prior_cleaned or self.replace_vr(e)
                 if rule == 'Z':
@@ -705,6 +706,11 @@ if __name__ == '__main__':
     # Force REPLACE string for any fields setup with new rule 'R':
     parser.add_argument('-f', '--force_replace', type=str, default=DEFAULT_FORCE_REPLACEMENT_REDACTED_STR,
                         help='Replacement string for any fields with in-house rule R. Defaults to {0}'.format(DEFAULT_FORCE_REPLACEMENT_REDACTED_STR))
+    # option to DO NOT CLEAN, to ONLY force_replace & exclude_series_descs,
+    # and to leave all else as is except for replaced tags & excluded series:
+    parser.add_argument('-d', '--do_not_clean', action='store_true', default=False,
+                            help='do NOT apply general tag value cleaning;'
+                                'instead only do any specified --force_replace & --exclude_series_descs')
     parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
                             help='Delete sqlite3 DB tables of previously generated clean values ;'
                                 'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
