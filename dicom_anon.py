@@ -39,6 +39,7 @@ import argparse
 import time
 
 DEFAULT_CLEANED_STR = 'CLEANED'
+DEFAULT_EXCLUDE_SERIES_DESCS = ['screen save', 'basic text sr']
 DEFAULT_MODALITIES = ['mr', 'ct']
 
 # standard SQL commands:
@@ -242,6 +243,7 @@ class DicomAnon(object):
         self.log_file = kwargs.get('log_file', 'dicom_anon.log')
         self.quarantine = kwargs.get('quarantine', 'quarantine')
         self.modalities = [string.lower() for string in kwargs.get('modalities', DEFAULT_MODALITIES)[0].split(',')]
+        self.exclude_series_descs = [string.strip().lower() for string in kwargs.get('exclude_series_descs', DEFAULT_EXCLUDE_SERIES_DESCS)[0].split(',')]
         self.org_root = kwargs.get('org_root', '5.555.5')
         self.rename = kwargs.get('rename', False)
         self.keep_overlay = kwargs.get('keep_overlay', False)
@@ -360,7 +362,11 @@ class DicomAnon(object):
             if 'patient protocol' in series_desc:
                 return True, 'patient protocol'
             elif 'save' in series_desc:  # from link in comment below
-                return True, 'Likely screen capture'
+                return True, 'Excluding likely screen capture (SeriesDescription==\'{0}\')'.format(series_desc)
+            else:
+                for xsd in self.exclude_series_descs:
+                    if xsd in series_desc.strip().lower():
+                        return True, 'Excluding SeriesDescription \'{0}\' as per exclusion type \'{1}\''.format(series_desc, xsd)
 
         if MODALITY in ds:
             modality = ds[MODALITY]
@@ -386,7 +392,7 @@ class DicomAnon(object):
                 image_type = [image_type.value]
             for i in image_type:
                 if i is not None and 'save' in i.strip().lower():
-                    return True, 'Likely screen capture'
+                    return True, 'Likely screen capture (image_type=={0})'.format(i)
 
         if MANUFACTURER in ds:
             manufacturer = ds[MANUFACTURER].value.strip().lower()
@@ -681,6 +687,8 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--audit_file', type=str, default='identity.db', help='Name of sqlite audit file')
     parser.add_argument('-m', '--modalities', type=str, nargs=1, default=DEFAULT_MODALITIES,
                         help='Comma separated list of allowed modalities. Defaults to {0}'.format(",".join(DEFAULT_MODALITIES)))
+    parser.add_argument('-x', '--exclude_series_descs', type=str, nargs=1, default=DEFAULT_EXCLUDE_SERIES_DESCS,
+                        help='Comma separated list of all series to exclude by their series description name (regardless of case). Defaults to {0}'.format(",".join(DEFAULT_EXCLUDE_SERIES_DESCS)))
     parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
                             help='Delete sqlite3 DB tables of previously generated clean values ;'
                                 'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
