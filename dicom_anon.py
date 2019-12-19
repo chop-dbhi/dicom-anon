@@ -589,7 +589,12 @@ class DicomAnon(object):
 
         # Fix file meta data portion
         if MEDIA_STORAGE_SOP_INSTANCE_UID in ds.file_meta:
-            ds.file_meta[MEDIA_STORAGE_SOP_INSTANCE_UID].value = ds[SOP_INSTANCE_UID].value
+            try:
+                ds.file_meta[MEDIA_STORAGE_SOP_INSTANCE_UID].value = ds[SOP_INSTANCE_UID].value
+            except Exception as e:
+                logger.error('Caught exception trying to set the value of MEDIA_STORAGE_SOP_INSTANCE_UID to that of SOP_INSTANCE_UID. Error was: %s' % e)
+                logger.info('%s will be moved to quarantine directory due to: %s' % (filepath, reason))
+
         ds.file_meta.walk(self.clean_meta)
         return ds, study_pk
 
