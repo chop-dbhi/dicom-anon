@@ -38,6 +38,8 @@ from functools import partial
 import argparse
 import time
 
+DEFAULT_MODALITIES = ['mr', 'ct']
+
 # standard SQL commands:
 TABLE_EXISTS = 'SELECT name FROM sqlite_master WHERE name=?'
 CREATE_NON_LINKED_TABLE = 'CREATE TABLE if not exists %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
@@ -238,7 +240,7 @@ class DicomAnon(object):
         self.audit_file = kwargs.get('audit_file', 'identity.db')
         self.log_file = kwargs.get('log_file', 'dicom_anon.log')
         self.quarantine = kwargs.get('quarantine', 'quarantine')
-        self.modalities = [string.lower() for string in kwargs.get('modalities', ['mr', 'ct'])]
+        self.modalities = [string.lower() for string in kwargs.get('modalities', DEFAULT_MODALITIES)[0].split(',')]
         self.org_root = kwargs.get('org_root', '5.555.5')
         self.rename = kwargs.get('rename', False)
         self.keep_overlay = kwargs.get('keep_overlay', False)
@@ -365,7 +367,7 @@ class DicomAnon(object):
                 modality = [modality.value]
             for m in modality:
                 if m is None or not m.lower() in self.modalities:
-                    return True, 'modality not allowed'
+                    return True, 'modality (\'{0}\') not in allowed list of modalities (==\'{1}\')'.format(m, self.modalities)
 
         if MODALITY not in ds:
             return True, 'Modality missing'
@@ -676,8 +678,8 @@ if __name__ == '__main__':
     parser.add_argument('-q', '--quarantine', type=str, default='quarantine', help='Quarantine directory')
     parser.add_argument('-w', '--white_list', type=str, default=None, help='White list json file')
     parser.add_argument('-a', '--audit_file', type=str, default='identity.db', help='Name of sqlite audit file')
-    parser.add_argument('-m', '--modalities', type=str, nargs='+', default=['mr', 'ct'],
-                        help='Comma separated list of allowed modalities. Defaults to mr,ct')
+    parser.add_argument('-m', '--modalities', type=str, nargs=1, default=DEFAULT_MODALITIES,
+                        help='Comma separated list of allowed modalities. Defaults to {0}'.format(",".join(DEFAULT_MODALITIES)))
     parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
                             help='Delete sqlite3 DB tables of previously generated clean values ;'
                                 'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
