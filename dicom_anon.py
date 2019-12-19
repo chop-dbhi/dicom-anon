@@ -38,6 +38,7 @@ from functools import partial
 import argparse
 import time
 
+DEFAULT_CLEANED_STR = 'CLEANED'
 DEFAULT_MODALITIES = ['mr', 'ct']
 
 # standard SQL commands:
@@ -495,7 +496,7 @@ class DicomAnon(object):
             if e.tag in list(AUDIT.keys()) and e.name and len(e.name):
                 cleaned = str('%s %d' % (e.name, self.audit.get_next_pk(e)))
             else:
-                cleaned = 'CLEANED'
+                cleaned = DEFAULT_CLEANED_STR
         return cleaned
 
     @staticmethod
