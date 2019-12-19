@@ -20,14 +20,14 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import dicom
-from dicom.errors import InvalidDicomError
-from dicom.tag import Tag
-from dicom.dataelem import DataElement
-from dicom.dataset import Dataset
-from dicom.sequence import Sequence
-from dicom.multival import MultiValue
-from dicom.valuerep import DS
+import pydicom
+from pydicom.errors import InvalidDicomError
+from pydicom.tag import Tag
+from pydicom.dataelem import DataElement
+from pydicom.dataset import Dataset
+from pydicom.sequence import Sequence
+from pydicom.multival import MultiValue
+from pydicom.valuerep import DS
 from datetime import datetime
 import logging
 import json
@@ -135,7 +135,7 @@ class Audit(object):
         return len(results) > 0
 
     def get_study_pk(self, cleaned):
-        self.cursor.execute(STUDY_PK, (cleaned,))
+        self.cursor.execute(STUDY_PK, (str(cleaned),))
         results = self.cursor.fetchall()
         return results[0][0]
 
@@ -163,12 +163,12 @@ class Audit(object):
             return None
 
         if tag.name.lower() == 'study instance uid':
-            self.cursor.execute(GET_NON_LINKED % table_name, (original,))
+            self.cursor.execute(GET_NON_LINKED % table_name, (str(original),))
             results = self.cursor.fetchall()
             if len(results):
                 value = results[0][0]
         else:
-            self.cursor.execute(GET_LINKED % table_name, (original, study_uid_pk))
+            self.cursor.execute(GET_LINKED % table_name, (str(original), study_uid_pk))
             results = self.cursor.fetchall()
             if len(results):
                 value = results[0][0]
@@ -183,7 +183,7 @@ class Audit(object):
         else:
             original = tag.value
         with self.db as db:
-            db.execute(UPDATE_LINKED % table_name, (cleaned, original, study_uid_pk))
+            db.execute(UPDATE_LINKED % table_name, (str(cleaned), str(original), study_uid_pk))
 
 
     def save(self, tag, cleaned, study_uid_pk=None):
@@ -204,9 +204,9 @@ class Audit(object):
         # Table exists
         with self.db as db:
             if tag.name.lower() == 'study instance uid':
-                db.execute(INSERT_OTHER % table_name, (original, cleaned))
+                db.execute(INSERT_OTHER % table_name, (str(original), str(cleaned)))
             else:
-                db.execute(INSERT_LINKED % table_name, (original, cleaned, study_uid_pk))
+                db.execute(INSERT_LINKED % table_name, (str(original), str(cleaned), study_uid_pk))
 
 
 
@@ -258,7 +258,7 @@ class DicomAnon(object):
         for root, _, files in os.walk(target_dir):
             filename = sorted(files)[0]
             try:
-                ds = dicom.read_file(open(os.path.join(root, filename)), stop_before_pixels=True)
+                ds = pydicom.read_file(open(os.path.join(root, filename)), stop_before_pixels=True)
             except (IOError, InvalidDicomError):
                 continue
             for tag in tags:
@@ -273,7 +273,7 @@ class DicomAnon(object):
     @staticmethod
     def convert_json_white_list(h):
         value = {}
-        for tag in h.keys():
+        for tag in list(h.keys()):
             a, b = tag.split(',')
             t = (int(a, 16), int(b, 16))
             value[t] = [re.sub(' +', ' ', re.sub('[-_,.]', '', x.lower().strip())) for x in h[tag]]
@@ -402,8 +402,8 @@ class DicomAnon(object):
         cleaned = None
         if self.profile == 'clean':
             # If it's in the ANNEX, we need to specifically be able to clean it
-            if (e.tag in self.spec.keys() and self.spec[(e.tag.group, e.tag.element)][9] == 'C') \
-                    or not (e.tag in self.spec.keys()):
+            if (e.tag in list(self.spec.keys()) and self.spec[(e.tag.group, e.tag.element)][9] == 'C') \
+                    or not (e.tag in list(self.spec.keys())):
                 white_listed = self.white_list_handler(e)
                 if not white_listed:
                     cleaned = self.basic(ds, e, study_pk)
@@ -416,7 +416,7 @@ class DicomAnon(object):
             ds[e.tag].value = cleaned
 
         # Tell our caller if we cleaned this element
-        if e.tag in self.spec.keys() or white_listed:
+        if e.tag in list(self.spec.keys()) or white_listed:
             return True
 
         return False
@@ -435,7 +435,7 @@ class DicomAnon(object):
         # but sqlite is returning unicode, test and convert
         if prior_cleaned:
             prior_cleaned = str(prior_cleaned)
-        if e.tag in self.spec.keys():
+        if e.tag in list(self.spec.keys()):
             rule = self.spec[(e.tag.group, e.tag.element)][2][0]  # For now we aren't going to worry about
             # IOD type conformance, just do the first option
             if rule == 'D':
@@ -450,7 +450,7 @@ class DicomAnon(object):
             if rule == 'U':
                 cleaned = prior_cleaned or self.generate_uid()
 
-        if e.tag in AUDIT.keys():
+        if e.tag in list(AUDIT.keys()):
             if cleaned is not None and cleaned != value and prior_cleaned is None and not (e.tag == STUDY_INSTANCE_UID):
                 self.audit.save(e, cleaned, study_uid_pk=study_pk)
 
@@ -467,8 +467,8 @@ class DicomAnon(object):
         elif e.VR == 'UI':
             cleaned = self.generate_uid()
         else:
-            if e.tag in AUDIT.keys() and e.name and len(e.name):
-                cleaned = ('%s %d' % (e.name, self.audit.get_next_pk(e))).encode('ascii')
+            if e.tag in list(AUDIT.keys()) and e.name and len(e.name):
+                cleaned = str('%s %d' % (e.name, self.audit.get_next_pk(e)))
             else:
                 cleaned = 'CLEANED'
         return cleaned
@@ -559,14 +559,14 @@ class DicomAnon(object):
         audit_date_correct = None
         if self.relative_dates is not None:
             date_adjust = {tag: first_date - datetime(1970, 1, 1) for tag, first_date
-                           in self.get_first_date(ident_dir, self.relative_dates).items()}
+                           in list(self.get_first_date(ident_dir, self.relative_dates).items())}
         for root, _, files in os.walk(ident_dir):
             for filename in files:
                 if filename.startswith('.'):
                     continue
                 source_path = os.path.join(root, filename)
                 try:
-                    ds = dicom.read_file(source_path)
+                    ds = pydicom.read_file(source_path)
                 except IOError:
                     logger.error('Error reading file %s' % source_path)
                     self.close_all()
@@ -609,7 +609,7 @@ class DicomAnon(object):
                 # Recover relative dates
                 if self.relative_dates is not None:
                     for tag in self.relative_dates:
-                        if audit_date_correct != study_pk and tag in AUDIT.keys():
+                        if audit_date_correct != study_pk and tag in list(AUDIT.keys()):
                             self.audit.update(ds[tag], obfusc_dates[tag].strftime('%Y%m%d'), study_pk)
                         ds[tag].value = obfusc_dates[tag].strftime('%Y%m%d')
                     audit_date_correct = study_pk
@@ -625,12 +625,12 @@ class DicomAnon(object):
 
                 # Set the De-identification method code sequence
                 method_ds = Dataset()
-                t = dicom.tag.Tag((0x8, 0x102))
+                t = pydicom.tag.Tag((0x8, 0x102))
                 if self.profile == 'clean':
                     method_ds[t] = DataElement(t, 'DS', MultiValue(DS, ['113100', '113105']))
                 else:
                     method_ds[t] = DataElement(t, 'DS', MultiValue(DS, ['113100']))
-                t = dicom.tag.Tag((0x12, 0x64))
+                t = pydicom.tag.Tag((0x12, 0x64))
                 ds[t] = DataElement(t, 'SQ', Sequence([method_ds]))
 
                 out_filename = ds[SOP_INSTANCE_UID].value if self.rename else filename
