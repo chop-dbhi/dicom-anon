@@ -40,6 +40,7 @@ import time
 
 DEFAULT_CLEANED_STR = 'CLEANED'
 DEFAULT_EXCLUDE_SERIES_DESCS = ['screen save', 'basic text sr']
+DEFAULT_FORCE_REPLACEMENT_REDACTED_STR = 'REDACTED'
 DEFAULT_MODALITIES = ['mr', 'ct']
 
 # standard SQL commands:
@@ -244,6 +245,7 @@ class DicomAnon(object):
         self.quarantine = kwargs.get('quarantine', 'quarantine')
         self.modalities = [string.lower() for string in kwargs.get('modalities', DEFAULT_MODALITIES)[0].split(',')]
         self.exclude_series_descs = [string.strip().lower() for string in kwargs.get('exclude_series_descs', DEFAULT_EXCLUDE_SERIES_DESCS)[0].split(',')]
+        self.force_replacement_str = kwargs.get('force_replace', DEFAULT_FORCE_REPLACEMENT_REDACTED_STR)
         self.org_root = kwargs.get('org_root', '5.555.5')
         self.rename = kwargs.get('rename', False)
         self.keep_overlay = kwargs.get('keep_overlay', False)
@@ -470,17 +472,23 @@ class DicomAnon(object):
         if e.tag in list(self.spec.keys()):
             rule = self.spec[(e.tag.group, e.tag.element)][2][0]  # For now we aren't going to worry about
             # IOD type conformance, just do the first option
-            if rule == 'D':
-                cleaned = prior_cleaned or self.replace_vr(e)
-            if rule == 'Z':
-                cleaned = prior_cleaned or self.replace_vr(e)
-            if rule == 'X':
-                del ds[e.tag]
-                cleaned = prior_cleaned or REMOVED_TEXT
-            if rule == 'K':
-                cleaned = value
-            if rule == 'U':
-                cleaned = prior_cleaned or self.generate_uid()
+            # beginning with an initial default cleaned of the same value if (do_not_clean and not rule == 'R'):
+            cleaned = value
+            if rule == 'R':
+                # NOTE: When so specified, the 'R' ("REPLACE") rule shall supercede all other rules:
+                cleaned = self.force_replacement_str
+            else:
+                if rule == 'D':
+                    cleaned = prior_cleaned or self.replace_vr(e)
+                if rule == 'Z':
+                    cleaned = prior_cleaned or self.replace_vr(e)
+                if rule == 'X':
+                    del ds[e.tag]
+                    cleaned = prior_cleaned or REMOVED_TEXT
+                if rule == 'K':
+                    cleaned = value
+                if rule == 'U':
+                    cleaned = prior_cleaned or self.generate_uid()
 
         if e.tag in list(AUDIT.keys()):
             if cleaned is not None and cleaned != value and prior_cleaned is None and not (e.tag == STUDY_INSTANCE_UID):
@@ -689,6 +697,9 @@ if __name__ == '__main__':
                         help='Comma separated list of allowed modalities. Defaults to {0}'.format(",".join(DEFAULT_MODALITIES)))
     parser.add_argument('-x', '--exclude_series_descs', type=str, nargs=1, default=DEFAULT_EXCLUDE_SERIES_DESCS,
                         help='Comma separated list of all series to exclude by their series description name (regardless of case). Defaults to {0}'.format(",".join(DEFAULT_EXCLUDE_SERIES_DESCS)))
+    # Force REPLACE string for any fields setup with new rule 'R':
+    parser.add_argument('-f', '--force_replace', type=str, default=DEFAULT_FORCE_REPLACEMENT_REDACTED_STR,
+                        help='Replacement string for any fields with in-house rule R. Defaults to {0}'.format(DEFAULT_FORCE_REPLACEMENT_REDACTED_STR))
     parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
                             help='Delete sqlite3 DB tables of previously generated clean values ;'
                                 'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
