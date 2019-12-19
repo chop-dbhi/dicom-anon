@@ -20,14 +20,14 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import dicom
-from dicom.errors import InvalidDicomError
-from dicom.tag import Tag
-from dicom.dataelem import DataElement
-from dicom.dataset import Dataset
-from dicom.sequence import Sequence
-from dicom.multival import MultiValue
-from dicom.valuerep import DS
+import pydicom
+from pydicom.errors import InvalidDicomError
+from pydicom.tag import Tag
+from pydicom.dataelem import DataElement
+from pydicom.dataset import Dataset
+from pydicom.sequence import Sequence
+from pydicom.multival import MultiValue
+from pydicom.valuerep import DS
 from datetime import datetime
 import logging
 import json
@@ -36,10 +36,17 @@ import sqlite3
 import shutil
 from functools import partial
 import argparse
+import time
 
+DEFAULT_CLEANED_STR = 'CLEANED'
+DEFAULT_EXCLUDE_SERIES_DESCS = ['screen save', 'basic text sr']
+DEFAULT_FORCE_REPLACEMENT_REDACTED_STR = 'REDACTED'
+DEFAULT_MODALITIES = ['mr', 'ct']
+
+# standard SQL commands:
 TABLE_EXISTS = 'SELECT name FROM sqlite_master WHERE name=?'
-CREATE_NON_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
-CREATE_LINKED_TABLE = 'CREATE TABLE %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, ' \
+CREATE_NON_LINKED_TABLE = 'CREATE TABLE if not exists %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)'
+CREATE_LINKED_TABLE = 'CREATE TABLE if not exists %s (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, study INTEGER, ' \
                       'FOREIGN KEY(study) REFERENCES studyinstanceuid(id))'
 INSERT_OTHER = 'INSERT INTO %s (original, cleaned) VALUES (?, ?)'
 INSERT_LINKED = 'INSERT INTO %s (original, cleaned, study) VALUES (?, ?, ?)'
@@ -48,6 +55,10 @@ GET_LINKED = 'SELECT cleaned FROM %s WHERE original = ? AND study = ?'
 UPDATE_LINKED = 'UPDATE %s SET cleaned = ? WHERE cleaned = ? AND study = ?'
 STUDY_PK = 'SELECT id FROM studyinstanceuid WHERE cleaned = ?'
 NEXT_ID = 'SELECT max(id) FROM %s'
+#### WARNING: PARTICULARLY DESTRUCTIVE SQL COMMANDS (for --DB_delete): ####
+PRE_DB_DELETE_PRAGMA_SET = 'PRAGMA writable_schema = 1'
+DB_DELETE = 'DELETE FROM sqlite_master where type in (\'table\', \'index\', \'trigger\')'
+POST_DB_DELETE_PRAGMA_RESET = 'PRAGMA writable_schema = 0;'
 
 MEDIA_STORAGE_SOP_INSTANCE_UID = (0x2, 0x3)
 STUDY_INSTANCE_UID = (0x20, 0xD)
@@ -119,8 +130,20 @@ class Audit(object):
         self.cursor = self.db.cursor()
         if not os.path.isfile(filename):
             with self.db as db:
-                # create the table that holds the studyintance because others will refer to it
-                db.execute(CREATE_NON_LINKED_TABLE % 'studyinstanceuid')
+                # create the table that holds the studyinstance because others will refer to it
+                table_name = 'studyinstanceuid'
+                db.execute(CREATE_NON_LINKED_TABLE % table_name)
+
+    def DB_delete(self):
+        # NOTE: DB_delete() can be useful when switching from a Python 2 environment to a Python 3 environment,
+        # to clear out the previously generated (e.g., Python 2) strings.
+        with self.db as db:
+            # delete all existing tables in this DB:
+            db.execute(PRE_DB_DELETE_PRAGMA_SET)
+            db.execute(DB_DELETE)
+            db.execute(POST_DB_DELETE_PRAGMA_RESET)
+            # and a 1-second safety pause to briefly allow things to settle:
+            time.sleep(1)
 
     @staticmethod
     def tag_to_table(tag):
@@ -135,7 +158,7 @@ class Audit(object):
         return len(results) > 0
 
     def get_study_pk(self, cleaned):
-        self.cursor.execute(STUDY_PK, (cleaned,))
+        self.cursor.execute(STUDY_PK, (str(cleaned),))
         results = self.cursor.fetchall()
         return results[0][0]
 
@@ -163,12 +186,12 @@ class Audit(object):
             return None
 
         if tag.name.lower() == 'study instance uid':
-            self.cursor.execute(GET_NON_LINKED % table_name, (original,))
+            self.cursor.execute(GET_NON_LINKED % table_name, (str(original),))
             results = self.cursor.fetchall()
             if len(results):
                 value = results[0][0]
         else:
-            self.cursor.execute(GET_LINKED % table_name, (original, study_uid_pk))
+            self.cursor.execute(GET_LINKED % table_name, (str(original), study_uid_pk))
             results = self.cursor.fetchall()
             if len(results):
                 value = results[0][0]
@@ -183,7 +206,7 @@ class Audit(object):
         else:
             original = tag.value
         with self.db as db:
-            db.execute(UPDATE_LINKED % table_name, (cleaned, original, study_uid_pk))
+            db.execute(UPDATE_LINKED % table_name, (str(cleaned), str(original), study_uid_pk))
 
 
     def save(self, tag, cleaned, study_uid_pk=None):
@@ -204,9 +227,9 @@ class Audit(object):
         # Table exists
         with self.db as db:
             if tag.name.lower() == 'study instance uid':
-                db.execute(INSERT_OTHER % table_name, (original, cleaned))
+                db.execute(INSERT_OTHER % table_name, (str(original), str(cleaned)))
             else:
-                db.execute(INSERT_LINKED % table_name, (original, cleaned, study_uid_pk))
+                db.execute(INSERT_LINKED % table_name, (str(original), str(cleaned), study_uid_pk))
 
 
 
@@ -220,13 +243,17 @@ class DicomAnon(object):
         self.audit_file = kwargs.get('audit_file', 'identity.db')
         self.log_file = kwargs.get('log_file', 'dicom_anon.log')
         self.quarantine = kwargs.get('quarantine', 'quarantine')
-        self.modalities = [string.lower() for string in kwargs.get('modalities', ['mr', 'ct'])]
+        self.modalities = [string.lower() for string in kwargs.get('modalities', DEFAULT_MODALITIES)[0].split(',')]
+        self.exclude_series_descs = [string.strip().lower() for string in kwargs.get('exclude_series_descs', DEFAULT_EXCLUDE_SERIES_DESCS)[0].split(',')]
+        self.force_replacement_str = kwargs.get('force_replace', DEFAULT_FORCE_REPLACEMENT_REDACTED_STR)
+        self.do_not_clean = kwargs.get('do_not_clean', False)
         self.org_root = kwargs.get('org_root', '5.555.5')
         self.rename = kwargs.get('rename', False)
         self.keep_overlay = kwargs.get('keep_overlay', False)
         self.keep_private_tags = kwargs.get('keep_private_tags', False)
         self.keep_csa_headers = kwargs.get('keep_csa_headers', False)
         self.relative_dates = kwargs.get('relative_dates', None)
+        self.DB_delete = kwargs.get('DB_delete', False)
 
         if self.white_list_file is not None:
             try:
@@ -238,6 +265,10 @@ class DicomAnon(object):
         self.spec = self.parse_spec_file(self.spec_file)
 
         self.audit = Audit(self.audit_file)
+
+        if self.DB_delete:
+            logger.warning('WARNING: dicom_anon called with --DB_delete==%s; resetting all cleaned counters.' % self.DB_delete)
+            self.audit.DB_delete()
 
         self.current_uid = None
 
@@ -258,7 +289,7 @@ class DicomAnon(object):
         for root, _, files in os.walk(target_dir):
             filename = sorted(files)[0]
             try:
-                ds = dicom.read_file(open(os.path.join(root, filename)), stop_before_pixels=True)
+                ds = pydicom.read_file(open(os.path.join(root, filename)), stop_before_pixels=True)
             except (IOError, InvalidDicomError):
                 continue
             for tag in tags:
@@ -273,7 +304,7 @@ class DicomAnon(object):
     @staticmethod
     def convert_json_white_list(h):
         value = {}
-        for tag in h.keys():
+        for tag in list(h.keys()):
             a, b = tag.split(',')
             t = (int(a, 16), int(b, 16))
             value[t] = [re.sub(' +', ' ', re.sub('[-_,.]', '', x.lower().strip())) for x in h[tag]]
@@ -334,7 +365,11 @@ class DicomAnon(object):
             if 'patient protocol' in series_desc:
                 return True, 'patient protocol'
             elif 'save' in series_desc:  # from link in comment below
-                return True, 'Likely screen capture'
+                return True, 'Excluding likely screen capture (SeriesDescription==\'{0}\')'.format(series_desc)
+            else:
+                for xsd in self.exclude_series_descs:
+                    if xsd in series_desc.strip().lower():
+                        return True, 'Excluding SeriesDescription \'{0}\' as per exclusion type \'{1}\''.format(series_desc, xsd)
 
         if MODALITY in ds:
             modality = ds[MODALITY]
@@ -342,7 +377,7 @@ class DicomAnon(object):
                 modality = [modality.value]
             for m in modality:
                 if m is None or not m.lower() in self.modalities:
-                    return True, 'modality not allowed'
+                    return True, 'modality (\'{0}\') not in allowed list of modalities (==\'{1}\')'.format(m, self.modalities)
 
         if MODALITY not in ds:
             return True, 'Modality missing'
@@ -360,7 +395,7 @@ class DicomAnon(object):
                 image_type = [image_type.value]
             for i in image_type:
                 if i is not None and 'save' in i.strip().lower():
-                    return True, 'Likely screen capture'
+                    return True, 'Likely screen capture (image_type=={0})'.format(i)
 
         if MANUFACTURER in ds:
             manufacturer = ds[MANUFACTURER].value.strip().lower()
@@ -402,8 +437,8 @@ class DicomAnon(object):
         cleaned = None
         if self.profile == 'clean':
             # If it's in the ANNEX, we need to specifically be able to clean it
-            if (e.tag in self.spec.keys() and self.spec[(e.tag.group, e.tag.element)][9] == 'C') \
-                    or not (e.tag in self.spec.keys()):
+            if (e.tag in list(self.spec.keys()) and self.spec[(e.tag.group, e.tag.element)][9] == 'C') \
+                    or not (e.tag in list(self.spec.keys())):
                 white_listed = self.white_list_handler(e)
                 if not white_listed:
                     cleaned = self.basic(ds, e, study_pk)
@@ -416,7 +451,7 @@ class DicomAnon(object):
             ds[e.tag].value = cleaned
 
         # Tell our caller if we cleaned this element
-        if e.tag in self.spec.keys() or white_listed:
+        if e.tag in list(self.spec.keys()) or white_listed:
             return True
 
         return False
@@ -435,22 +470,28 @@ class DicomAnon(object):
         # but sqlite is returning unicode, test and convert
         if prior_cleaned:
             prior_cleaned = str(prior_cleaned)
-        if e.tag in self.spec.keys():
+        if e.tag in list(self.spec.keys()):
             rule = self.spec[(e.tag.group, e.tag.element)][2][0]  # For now we aren't going to worry about
             # IOD type conformance, just do the first option
-            if rule == 'D':
-                cleaned = prior_cleaned or self.replace_vr(e)
-            if rule == 'Z':
-                cleaned = prior_cleaned or self.replace_vr(e)
-            if rule == 'X':
-                del ds[e.tag]
-                cleaned = prior_cleaned or REMOVED_TEXT
-            if rule == 'K':
-                cleaned = value
-            if rule == 'U':
-                cleaned = prior_cleaned or self.generate_uid()
+            # beginning with an initial default cleaned of the same value if (do_not_clean and not rule == 'R'):
+            cleaned = value
+            if rule == 'R':
+                # NOTE: When so specified, the 'R' ("REPLACE") rule shall supercede all other rules:
+                cleaned = self.force_replacement_str
+            elif not self.do_not_clean:
+                if rule == 'D':
+                    cleaned = prior_cleaned or self.replace_vr(e)
+                if rule == 'Z':
+                    cleaned = prior_cleaned or self.replace_vr(e)
+                if rule == 'X':
+                    del ds[e.tag]
+                    cleaned = prior_cleaned or REMOVED_TEXT
+                if rule == 'K':
+                    cleaned = value
+                if rule == 'U':
+                    cleaned = prior_cleaned or self.generate_uid()
 
-        if e.tag in AUDIT.keys():
+        if e.tag in list(AUDIT.keys()):
             if cleaned is not None and cleaned != value and prior_cleaned is None and not (e.tag == STUDY_INSTANCE_UID):
                 self.audit.save(e, cleaned, study_uid_pk=study_pk)
 
@@ -467,10 +508,10 @@ class DicomAnon(object):
         elif e.VR == 'UI':
             cleaned = self.generate_uid()
         else:
-            if e.tag in AUDIT.keys() and e.name and len(e.name):
-                cleaned = ('%s %d' % (e.name, self.audit.get_next_pk(e))).encode('ascii')
+            if e.tag in list(AUDIT.keys()) and e.name and len(e.name):
+                cleaned = str('%s %d' % (e.name, self.audit.get_next_pk(e)))
             else:
-                cleaned = 'CLEANED'
+                cleaned = DEFAULT_CLEANED_STR
         return cleaned
 
     @staticmethod
@@ -549,7 +590,12 @@ class DicomAnon(object):
 
         # Fix file meta data portion
         if MEDIA_STORAGE_SOP_INSTANCE_UID in ds.file_meta:
-            ds.file_meta[MEDIA_STORAGE_SOP_INSTANCE_UID].value = ds[SOP_INSTANCE_UID].value
+            try:
+                ds.file_meta[MEDIA_STORAGE_SOP_INSTANCE_UID].value = ds[SOP_INSTANCE_UID].value
+            except Exception as e:
+                logger.error('Caught exception trying to set the value of MEDIA_STORAGE_SOP_INSTANCE_UID to that of SOP_INSTANCE_UID. Error was: %s' % e)
+                logger.info('%s will be moved to quarantine directory due to: %s' % (filepath, reason))
+
         ds.file_meta.walk(self.clean_meta)
         return ds, study_pk
 
@@ -559,14 +605,14 @@ class DicomAnon(object):
         audit_date_correct = None
         if self.relative_dates is not None:
             date_adjust = {tag: first_date - datetime(1970, 1, 1) for tag, first_date
-                           in self.get_first_date(ident_dir, self.relative_dates).items()}
+                           in list(self.get_first_date(ident_dir, self.relative_dates).items())}
         for root, _, files in os.walk(ident_dir):
             for filename in files:
                 if filename.startswith('.'):
                     continue
                 source_path = os.path.join(root, filename)
                 try:
-                    ds = dicom.read_file(source_path)
+                    ds = pydicom.read_file(source_path)
                 except IOError:
                     logger.error('Error reading file %s' % source_path)
                     self.close_all()
@@ -609,7 +655,7 @@ class DicomAnon(object):
                 # Recover relative dates
                 if self.relative_dates is not None:
                     for tag in self.relative_dates:
-                        if audit_date_correct != study_pk and tag in AUDIT.keys():
+                        if audit_date_correct != study_pk and tag in list(AUDIT.keys()):
                             self.audit.update(ds[tag], obfusc_dates[tag].strftime('%Y%m%d'), study_pk)
                         ds[tag].value = obfusc_dates[tag].strftime('%Y%m%d')
                     audit_date_correct = study_pk
@@ -625,12 +671,12 @@ class DicomAnon(object):
 
                 # Set the De-identification method code sequence
                 method_ds = Dataset()
-                t = dicom.tag.Tag((0x8, 0x102))
+                t = pydicom.tag.Tag((0x8, 0x102))
                 if self.profile == 'clean':
                     method_ds[t] = DataElement(t, 'DS', MultiValue(DS, ['113100', '113105']))
                 else:
                     method_ds[t] = DataElement(t, 'DS', MultiValue(DS, ['113100']))
-                t = dicom.tag.Tag((0x12, 0x64))
+                t = pydicom.tag.Tag((0x12, 0x64))
                 ds[t] = DataElement(t, 'SQ', Sequence([method_ds]))
 
                 out_filename = ds[SOP_INSTANCE_UID].value if self.rename else filename
@@ -653,8 +699,21 @@ if __name__ == '__main__':
     parser.add_argument('-q', '--quarantine', type=str, default='quarantine', help='Quarantine directory')
     parser.add_argument('-w', '--white_list', type=str, default=None, help='White list json file')
     parser.add_argument('-a', '--audit_file', type=str, default='identity.db', help='Name of sqlite audit file')
-    parser.add_argument('-m', '--modalities', type=str, nargs='+', default=['mr', 'ct'],
-                        help='Comma separated list of allowed modalities. Defaults to mr,ct')
+    parser.add_argument('-m', '--modalities', type=str, nargs=1, default=DEFAULT_MODALITIES,
+                        help='Comma separated list of allowed modalities. Defaults to {0}'.format(",".join(DEFAULT_MODALITIES)))
+    parser.add_argument('-x', '--exclude_series_descs', type=str, nargs=1, default=DEFAULT_EXCLUDE_SERIES_DESCS,
+                        help='Comma separated list of all series to exclude by their series description name (regardless of case). Defaults to {0}'.format(",".join(DEFAULT_EXCLUDE_SERIES_DESCS)))
+    # Force REPLACE string for any fields setup with new rule 'R':
+    parser.add_argument('-f', '--force_replace', type=str, default=DEFAULT_FORCE_REPLACEMENT_REDACTED_STR,
+                        help='Replacement string for any fields with in-house rule R. Defaults to {0}'.format(DEFAULT_FORCE_REPLACEMENT_REDACTED_STR))
+    # option to DO NOT CLEAN, to ONLY force_replace & exclude_series_descs,
+    # and to leave all else as is except for replaced tags & excluded series:
+    parser.add_argument('-d', '--do_not_clean', action='store_true', default=False,
+                            help='do NOT apply general tag value cleaning;'
+                                'instead only do any specified --force_replace & --exclude_series_descs')
+    parser.add_argument('-D', '--DB_delete', action='store_true', default=False,
+                            help='Delete sqlite3 DB tables of previously generated clean values ;'
+                                'do NOT use if this DICOM batch is to maintain consistency with previously cleaned study values, etc.')
     parser.add_argument('-o', '--org_root', type=str, default='5.555.5', help='Your organizations DICOM org root')
     parser.add_argument('-l', '--log_file', type=str, default=None,
                         help='Name of file to log messages to. Defaults to console')
